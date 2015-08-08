@@ -1,0 +1,12 @@
+{
+  "name": "dysphasia",
+  "version": "0.0.1",
+  "description": "Experimental programming language, not recommended for anything practical.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node_modules/.bin/pegjs src/parser/parser.pegjs src/parser/parser.js"
+  },
+  "author": "",
+  "license": "BSD"
+}

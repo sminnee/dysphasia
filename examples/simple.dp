@@ -1,0 +1,6 @@
+main {
+	"hello world";
+	"something \"really good\" for \\ you";
+	1 + 2 + 3;
+	return 3 + 4 * 2;
+}
