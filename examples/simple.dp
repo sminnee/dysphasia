@@ -1,7 +1,11 @@
-use puts
+use puts;
 
 main {
-	puts("hello world");
+	if (0) {
+		puts("hello world");
+	} else {
+		puts("goodbye world");
+	};
 	return 0;
 }
 

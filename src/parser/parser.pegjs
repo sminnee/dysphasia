@@ -26,8 +26,9 @@ statementLine "statement"
   = statement:statement ws? ";" ws? { return statement; }
 
 statement
-  = expression
+  = ifBlock
   / returnStatement
+  / expression
 
 returnStatement
   = "return" ws expr:expression { return compiler.handleReturnStatement(expr); }
@@ -78,6 +79,17 @@ extraFunctionArguments
   = ws? "," ws? argument:expression rest:extraFunctionArguments? { 
     return rest ? [argument].concat(rest) : [argument]; 
   }
+
+/**
+ * If blocks
+ */
+
+ifBlock "if block"
+  = "if" ws? "(" ws? test:expression ws? ")" ws? "{" pass:blockcontent "}" ws? fail:elseBlock?
+    { return compiler.handleIfBlock(test, pass, fail); }
+elseBlock "else block"
+  = "else" ws? "{" fail:blockcontent "}" ws?
+    { return fail; }
 
 /**
  * Function imports (use)

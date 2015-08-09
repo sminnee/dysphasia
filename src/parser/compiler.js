@@ -100,6 +100,48 @@ LLVM.prototype = {
     }
   },
 
+  // ------------------------------------------------ //
+
+  handleIfBlock: function (test, pass, fail) {
+    // If
+    if (fail === null) {
+      var trueLabel = this.nextVarName('IfTrue').substr(1);
+      var contLabel = this.nextVarName('ElseContinue').substr(1);
+
+      var code = test.code
+        + 'br i1 ' + test.varName + ', label %' + trueLabel + ', label %' + contLabel + '\n\n'
+        + trueLabel + ':\n'
+        + pass.map(function (s) { return s.code; }).join('')
+        + 'br label %' + contLabel + '\n'
+        + '\n' + contLabel + ':\n';
+
+    // If..Else
+    } else {
+      var trueLabel = this.nextVarName('IfTrue').substr(1);
+      var falseLabel = this.nextVarName('IfFalse').substr(1);
+      var contLabel = this.nextVarName('Continue').substr(1);
+
+      var code = test.code
+        + 'br i1 ' + test.varName + ', label %' + trueLabel + ', label %' + falseLabel + '\n\n'
+        + trueLabel + ':\n'
+        + pass.map(function (s) { return s.code; }).join('')
+        + 'br label %' + contLabel + '\n'
+        + falseLabel + ':\n'
+        + fail.map(function (s) { return s.code; }).join('')
+        + 'br label %' + contLabel + '\n'
+        + '\n' + contLabel + ':\n';
+    }
+
+    return {
+      code: code,
+      globalCode: test.globalCode
+        + pass.map(function (s) { return s.globalCode; }).join('')
+        + (fail ? fail.map(function (s) { return s.globalCode; }).join('') : '')
+    };
+  },
+
+  // ------------------------------------------------ //
+
   handleString: function (value) {
     var varName = this.nextGlobalVarName('str');
     var type = '[' + value.length + ' x i8]';
