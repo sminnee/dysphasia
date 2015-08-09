@@ -1,11 +1,19 @@
+var Compiler = require('./parser/compiler');
+
 function DysphasiaFile (input) {
   this.input = input;
 }
 
 DysphasiaFile.prototype.parseTree = function () {
   var Parser = require('./parser/parser');
-  return Parser.parse(this.input);
-}
+  return Parser.parse(this.input, { compiler: new Compiler.ParseTree() });
+};
+
+DysphasiaFile.prototype.generateLLVMCode = function () {
+  var Parser = require('./parser/parser');
+  return Parser.parse(this.input, { compiler: new Compiler.LLVM() });
+};
+
 
 var Dysphasia = {
   loadString: function(string) {
