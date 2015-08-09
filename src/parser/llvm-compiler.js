@@ -4,109 +4,189 @@
 function LLVM () {
   this.varNum = 0;
 }
+
+/**
+ * Merge together all the executable code in the array of expressions,
+ * setting the expression value / type to that of the last expression in the list.
+ */
+function mergeExpressions (expressions) {
+  var lastExpression = expressions[expressions.length - 1];
+
+  var result = {
+    code: expressions.map(function (exp) { return (exp && exp.code) ? exp.code : ''; }).join(''),
+    globalCode: expressions.map(function (exp) { return (exp && exp.globalCode) ? exp.globalCode : ''; }).join('')
+  };
+
+  if (lastExpression.varName) result.varName = lastExpression.varName;
+  if (lastExpression.type) result.type = lastExpression.type;
+
+  return result;
+}
+
+/**
+ * Adds an LLVM expression to the base, assigning the result to a new variable
+ */
+function addLLVMExpression (varBucket, base, type, llvmExpression) {
+  var varName = varBucket.nextVarName('var');
+
+  return mergeExpressions([base, {
+    code: varName + ' = ' + llvmExpression + '\n',
+    varName: varName,
+    type: type
+  }]);
+}
+
+/**
+ * Adds an LLVM statement to the base, clearing the result
+ */
+function addLLVMStatement (base, llvmStatement) {
+  return mergeExpressions([base, {
+    code: llvmStatement + '\n'
+  }]);
+}
+
+/**
+ * Returns a labelled block based on the given expression
+ */
+function labelledBlock (label, expression) {
+  expression.code = label + ':' + '\n' + indent(expression.code);
+  return expression;
+}
+
+/**
+ * Combine 2 branches with an appropriate llvm operator - used for add, mul, etc
+ */
+function combineWithOperator (varBucket, opName, left, right) {
+  if (left.type !== right.type) {
+    throw 'Type mismatch: ' + left.type + ', ' + right.type;
+  }
+
+  return addLLVMExpression(
+    varBucket,
+    mergeExpressions([left, right]),
+    left.type,
+    opName + ' ' + left.type + ' ' + left.varName + ', ' + right.varName
+  );
+}
+
+/**
+ * Intends a string value by 2 spaces - used to format generated code
+ */
+function indent (str) {
+  return '  ' + str.replace(/\n(.)/g, '\n  $1');
+}
+
 LLVM.prototype = {
+  /**
+   * Overall file
+   */
   handleTop: function (blocks) {
     return blocks
       .map(function (b) { return b.globalCode; })
       .join('');
   },
+
+  /**
+   * Single function definition
+   */
   handleBlock: function (name, statements) {
-    var statementCode = statements.map(function (s) { return s.code; }).join('');
+    var block = mergeExpressions(statements);
     return {
-      globalCode: 
-        statements.map(function (s) { return s.globalCode; }).join('')
-        + 'define i32 @' + name + '() {\n  ' + statementCode.replace(/\n/g, '\n  ') + '\n}\n'
+      globalCode: block.globalCode + 'define i32 @' + name + '() {\n' + indent(block.code) + '}\n'
     };
   },
+
+  /**
+   * Return statement
+   */
+  handleReturnStatement: function (expr) {
+    return addLLVMStatement(expr, 'ret ' + expr.type + ' ' + expr.varName);
+  },
+
+  /**
+   * Expression
+   */
   handleStringExpression: function (expr) {
     return expr;
-  },
-  handleReturnStatement: function (expr) {
-    return {
-      globalCode: expr.globalCode,
-      code: expr.code + '\n' + 'ret ' + expr.type + ' ' + expr.varName + '\n'
-    };
   },
   handleArithmeticExpression: function (expr) {
     return expr;
   },
   handleAdd: function (left, right) {
-    return this.combineBranchesWith('add', left, right);
+    return combineWithOperator(this, 'add', left, right);
   },
   handleMul: function (left, right) {
-    return this.combineBranchesWith('mul', left, right);
+    return combineWithOperator(this, 'mul', left, right);
   },
 
+  /**
+   * Function call
+   */
   handleFunctionCall: function (fName, fArgs) {
-    var varName = this.nextVarName('fn');
-    fArgs = fArgs.map(this.processArgument.bind(this));
+    var varBucket = this;
 
-    return { 
-      code:
-        fArgs.map(function (b) { return b.code; })
-        + varName +' = call i32 @' + fName + '(' + fArgs.map(function (b) { return b.type + ' ' + b.varName; }).join(', ') + ')\n' , 
-      globalCode: fArgs.map(function (b) { return b.globalCode; }),
-      varName: varName
-    }
-  },
-
-  processArgument: function(argument) {
-    // Cast the argument,
-    if(argument.type != 'i8*') {
-      var varName = this.nextVarName('cast');
-      return {
-        globalCode: argument.globalCode,
-        code: varName + ' = getelementptr ' + argument.type + '* ' + argument.varName + ', i64 0, i64 0\n',
-        varName: varName,
-        type: 'i8*'
+    // Cast arguments as needed
+    fArgs = fArgs.map(function (arg) {
+      if (arg.type !== 'i8*') {
+        return addLLVMExpression(
+          varBucket,
+          arg,
+          'i8*',
+          'getelementptr ' + arg.type + '* ' + arg.varName + ', i64 0, i64 0'
+        );
+      } else {
+        return arg;
       }
-    } else {
-      return argument;
-    }
+    });
+
+    // Call
+    return addLLVMExpression(
+      this,
+      mergeExpressions(fArgs),
+      'i32',
+      'call i32 @' + fName + '(' + fArgs.map(function (b) { return b.type + ' ' + b.varName; }).join(', ') + ')'
+    );
   },
 
   // ------------------------------------------------ //
 
+  /**
+   * If and If/Else block
+   */
   handleIfBlock: function (test, pass, fail) {
     // If
-    if (fail === null) {
-      var trueLabel = this.nextVarName('IfTrue').substr(1);
-      var contLabel = this.nextVarName('ElseContinue').substr(1);
+    var trueLabel = this.nextVarName('IfTrue').substr(1);
+    var contLabel = this.nextVarName('Continue').substr(1);
+    var falseLabel = contLabel;
+    var falseBlock = {};
 
-      var code = test.code
-        + 'br i1 ' + test.varName + ', label %' + trueLabel + ', label %' + contLabel + '\n\n'
-        + trueLabel + ':\n'
-        + pass.map(function (s) { return s.code; }).join('')
-        + 'br label %' + contLabel + '\n'
-        + '\n' + contLabel + ':\n';
+    var trueBlock = labelledBlock(trueLabel, addLLVMStatement(
+      mergeExpressions(pass),
+      'br label %' + contLabel
+    ));
 
-    // If..Else
-    } else {
-      var trueLabel = this.nextVarName('IfTrue').substr(1);
-      var falseLabel = this.nextVarName('IfFalse').substr(1);
-      var contLabel = this.nextVarName('Continue').substr(1);
-
-      var code = test.code
-        + 'br i1 ' + test.varName + ', label %' + trueLabel + ', label %' + falseLabel + '\n\n'
-        + trueLabel + ':\n'
-        + pass.map(function (s) { return s.code; }).join('')
-        + 'br label %' + contLabel + '\n'
-        + falseLabel + ':\n'
-        + fail.map(function (s) { return s.code; }).join('')
-        + 'br label %' + contLabel + '\n'
-        + '\n' + contLabel + ':\n';
+    // Fail block handling for If..Else
+    if (fail) {
+      falseLabel = this.nextVarName('IfFalse').substr(1);
+      falseBlock = labelledBlock(falseLabel, addLLVMStatement(
+        mergeExpressions(fail),
+        'br label %' + contLabel
+      ));
     }
 
-    return {
-      code: code,
-      globalCode: test.globalCode
-        + pass.map(function (s) { return s.globalCode; }).join('')
-        + (fail ? fail.map(function (s) { return s.globalCode; }).join('') : '')
-    };
+    var branch = addLLVMStatement(test, 'br i1 ' + test.varName + ', label %' + trueLabel + ', label %' + falseLabel);
+
+    return addLLVMStatement(
+      mergeExpressions([branch, trueBlock, falseBlock]),
+      contLabel + ':'
+    );
   },
 
   // ------------------------------------------------ //
 
+  /**
+   * String literals
+   */
   handleString: function (value) {
     var varName = this.nextGlobalVarName('str');
     var type = '[' + value.length + ' x i8]';
@@ -114,16 +194,15 @@ LLVM.prototype = {
     return {
       globalCode: varName + ' = private unnamed_addr constant ' + type + ' c"'
         + value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '"\n',
-      code: '',
       varName: varName,
       type: type
     };
   },
   handleFloat: function (value) {
-    return { globalCode: '', code: '', varName: value, type: 'float' };
+    return { varName: value, type: 'float' };
   },
   handleInt: function (value) {
-    return { globalCode: '', code: '', varName: value, type: 'i32' };
+    return { varName: value, type: 'i32' };
   },
   handleUse: function (name) {
     return { globalCode: 'declare i32 @' + name + '(i8* nocapture) nounwind\n' };
@@ -138,23 +217,6 @@ LLVM.prototype = {
   nextGlobalVarName: function (prefix) {
     this.varNum++;
     return '@' + prefix + this.varNum;
-  },
-
-  combineBranchesWith: function (fnName, left, right) {
-    var varName = this.nextVarName('add');
-    if (left.type !== right.type) {
-      throw 'Type mismatch: ' + left.type + ', ' + right.type;
-    }
-
-    return {
-      globalCode: left.globalCode + right.globalCode,
-      code:
-        left.code +
-        right.code +
-        varName + ' = ' + fnName + ' ' + left.type + ' ' + left.varName + ', ' + right.varName + '\n',
-      varName: varName,
-      type: left.type
-    };
   }
 };
 
