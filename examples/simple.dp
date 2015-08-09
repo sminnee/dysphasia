@@ -1,6 +1,10 @@
+use puts
+
 main {
-	"hello world";
-	"something \"really good\" for \\ you";
-	1 + 2 + 3;
+	puts("hello world");
+	return 0;
+}
+
+other {
 	return 3 + 4 * 2;
 }

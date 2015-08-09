@@ -8,5 +8,8 @@
     "build": "node_modules/.bin/pegjs src/parser/parser.pegjs src/parser/parser.js"
   },
   "author": "",
-  "license": "BSD"
+  "license": "BSD",
+  "dependencies": {
+    "pegjs": "^0.8.0"
+  }
 }

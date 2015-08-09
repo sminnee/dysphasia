@@ -10,13 +10,14 @@
  * Each dp file containers a number of named blocks.
  */
 start
-  = items:block* { return compiler.handleTop(items); }
+  = ws? items:item* { return compiler.handleTop(items); }
+
+item
+  = block
+  / useStatement
 
 block "block"
-  = name:blockname ws? "{" content:blockcontent "}" { return compiler.handleBlock(name, content); }
-
-blockname "block name"
-  = lchar:[A-Za-z] rchars:[A-Za-z0-9_]+ { return lchar + rchars.join(""); }
+  = name:symbolname ws? "{" content:blockcontent "}" ws? { return compiler.handleBlock(name, content); }
 
 blockcontent
   = ws? statements:(statementLine)* { return statements; }
@@ -34,6 +35,7 @@ returnStatement
 expression
   = stringExpression
   / arithmeticExpression
+  / functionCall
 
 stringExpression
   = value:string { return compiler.handleStringExpression(value); }
@@ -58,10 +60,36 @@ primary
   / "(" ws? additive:additive ws? ")" { return additive; }
 
 /**
+ * FunctionCall
+ */
+functionCall 
+  = name:symbolname ws? "(" ws? arguments:functionArguments? ws? ")"
+    {
+      return compiler.handleFunctionCall(name, arguments ? arguments : [] );
+    }
+
+functionArguments
+  = argument:expression rest:extraFunctionArguments?
+    {
+      return rest ? [argument].concat(rest) : [argument];;
+    }
+
+extraFunctionArguments
+  = ws? "," ws? argument:expression rest:extraFunctionArguments? { 
+    return rest ? [argument].concat(rest) : [argument]; 
+  }
+
+/**
  * Function imports (use)
  */
 useStatement "use statement"
-  = "use" ws name:blockname { return compiler.handleUse(name); }
+  = "use" ws name:symbolname ws? ";"? ws? { return compiler.handleUse(name); }
+
+/**
+ * Function name, etc
+ */
+symbolname "symbol name"
+  = lchar:[A-Za-z] rchars:[A-Za-z0-9_]+ { return lchar + rchars.join(""); }
 
 /**
  * Basic literals
@@ -75,6 +103,9 @@ string "string"
 stringcontent "string content"
   = "\\\\" { return "\\"; }
   / "\\\"" { return "\""; }
+  / "\\n" { return "\n"; }
+  / "\\r" { return "\r"; }
+  / "\\t" { return "\t"; }
   / contents:[^\\"]+ {return contents.join(""); }
 
 integer "integer"

@@ -1,1 +1,3 @@
 node_modules/
+*.ll
+npm-debug.log
