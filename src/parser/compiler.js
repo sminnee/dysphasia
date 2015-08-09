@@ -148,7 +148,7 @@ LLVM.prototype = {
 
     return {
       globalCode: varName + ' = private unnamed_addr constant ' + type + ' c"'
-        + value.replace(/[\\'"]/g, '\\$&').replace(/\n/g,"\\0A").replace(/\r/g,"\\00") + '"\n',
+        + value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '"\n',
       code: '',
       varName: varName,
       type: type
