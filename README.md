@@ -17,8 +17,8 @@ the `llvm` one.
 
 	brew install llvm36
 
-If you install this package, then you will get `llvm-config-3.6` and `clang++-3.6` in your path. If these tools have
-different binary names, please set the `LLVM_CONFIG` and `CLANG` environment variables
+If you install this package, then you will get `llvm-config-3.6`, `clang++-3.6`, `llc-3.6` and `opt-3.6` in your path. If
+these tools have different binary names, please set the `LLVM_CONFIG`, `CLANG`, `LLC` and `OPT` environment variables.
 
 Try it out
 ----------
