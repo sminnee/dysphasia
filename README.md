@@ -30,3 +30,52 @@ It doesn't do very much right, now, but this will show a parse tree:
 This will compile to `examples/simple`, which you can then run:
 
 	examples/simple
+
+
+Language features
+=================
+
+Because this is in development, many basic features are missing, but this is what is implemented so far.
+
+Function blocks
+---------------
+
+Functions are defined by writing a function name, followed by a set of statements in braces. Function names must
+start with a letter, and subsequent characters should be alphanumerics or _.
+
+    main {
+      return 1;
+    }
+
+
+Expressions
+-----------
+
+Basic mathematical expressions are supported, with `+`, `-`, `*`, `/`, and brackets for precedence:
+
+    12 * (2 + 4)
+
+If/then/else
+------------
+
+If/then/else synax is similar to C:
+
+    main {
+      if(1) {
+        puts("Hello world\n");
+      } else {
+        puts("Goodbye world\n");
+      }
+    }
+
+Use
+---
+
+The "use" statement can import a C function, such as puts. Right now it only works with functions that take
+a single char* argument.
+
+    use puts;
+    main {
+      puts("hello world");
+      return 0;
+    }
