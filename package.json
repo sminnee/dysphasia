@@ -2,11 +2,11 @@
   "name": "dysphasia",
   "version": "0.0.1",
   "description": "Experimental programming language, not recommended for anything practical.",
-  "bin" : {
-    "dys" : "./main.js" 
+  "bin": {
+    "dys": "./main.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "./node_modules/.bin/mocha",
     "build": "node_modules/.bin/pegjs src/parser/parser.pegjs src/parser/parser.js"
   },
   "author": "",
@@ -14,5 +14,8 @@
   "dependencies": {
     "node-getopt": "^0.2.3",
     "pegjs": "^0.8.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.5"
   }
 }

@@ -1,72 +1,182 @@
 /**
- * LLVM IR generator
- */
-function LLVM () {
-  this.varNum = 0;
-}
-
-/**
  * Merge together all the executable code in the array of expressions,
  * setting the expression value / type to that of the last expression in the list.
  */
-function mergeExpressions (expressions) {
-  var lastExpression = expressions[expressions.length - 1];
-
-  var result = {
-    code: expressions.map(function (exp) { return (exp && exp.code) ? exp.code : ''; }).join(''),
-    globalCode: expressions.map(function (exp) { return (exp && exp.globalCode) ? exp.globalCode : ''; }).join('')
-  };
-
-  if (lastExpression.varName) result.varName = lastExpression.varName;
-  if (lastExpression.type) result.type = lastExpression.type;
-
-  return result;
-}
 
 /**
- * Adds an LLVM expression to the base, assigning the result to a new variable
+ * An LLVM AST node
  */
-function addLLVMExpression (varBucket, base, type, llvmExpression) {
-  var varName = varBucket.nextVarName('var');
-
-  return mergeExpressions([base, {
-    code: varName + ' = ' + llvmExpression + '\n',
-    varName: varName,
-    type: type
-  }]);
+function ASTNode (builder, options) {
+  this.builder = builder;
+  this.options = options;
+  if(!this.options.code) this.options.code = '';
+  if(!this.options.globalCode) this.options.globalCode = '';
 }
+
+Object.defineProperties(ASTNode.prototype, {
+  value: {
+    get: function () {
+      return this.options.value;
+    }
+  },
+  type: {
+    get: function () {
+      return this.options.type;
+    }
+  },
+  blockLabel: {
+    get: function () {
+      return this.options.label;
+    }
+  }
+});
+
+/**
+ * Push another expression onto the end of this expression, as a subsequent statement
+ */
+ASTNode.prototype.merge = function (next) {
+  // TODO: clone next
+  next.options.code = this.options.code + next.options.code;
+  next.options.globalCode = this.options.globalCode + next.options.globalCode;
+  return next;
+};
 
 /**
  * Adds an LLVM statement to the base, clearing the result
  */
-function addLLVMStatement (base, llvmStatement) {
-  return mergeExpressions([base, {
-    code: llvmStatement + '\n'
-  }]);
-}
+ASTNode.prototype.addStatement = function (statement) {
+  // TODO: this isn't very efficient
+  return this.builder.nodeList([
+    this,
+    new ASTNode(this.builder, {
+      code: statement + '\n'
+    })
+  ]);
+};
 
 /**
- * Returns a labelled block based on the given expression
+ * Adds an LLVM expression to the base, assigning the result to a new variable
  */
-function labelledBlock (label, expression) {
-  expression.code = label + ':' + '\n' + indent(expression.code);
-  return expression;
+ASTNode.prototype.addExpression = function (type, expression) {
+  var varName = this.builder.nextVarName('var');
+
+  return this.merge(new ASTNode(this.builder, {
+    code: varName + ' = ' + expression + '\n',
+    value: varName,
+    type: type
+  }));
+};
+
+/**
+ * Label the statements in this ASTNode as a block
+ * @param A hint, or if it starts with %, an exact block name
+ */
+ASTNode.prototype.labelBlock = function (label) {
+  // If the label starts with % then we assume it has been previously generated, otherwise treat as a hint
+  var labelName = (label[0] === '%') ? label : this.builder.nextVarName(label);
+
+  this.options.code = labelName.substr(1) + ':' + '\n' + indent(this.options.code);
+  this.options.label = labelName;
+
+  return this;
+};
+
+/**
+ * Add a label to the end of the block, effectively labelling the next block
+ */
+ASTNode.prototype.labelBlockEnd = function (label) {
+  var labelName = (label[0] === '%') ? label : this.builder.nextVarName(label);
+
+  this.options.code += labelName.substr(1) + ':' + '\n';
+
+  return this;
+};
+
+/**
+ * Turn the expressions into the body of a function
+ */
+ASTNode.prototype.defineFunction = function (name) {
+  return new ASTNode(this.builder, {
+    globalCode: this.options.globalCode + 'define i32 @' + name + '() {\n' + indent(this.options.code) + '}\n'
+  });
+};
+
+/**
+ * An AST Builder
+ */
+function ASTBuilder () {
+  this.varNum = 0;
 }
+
+ASTBuilder.prototype.nextVarName = function (prefix) {
+  this.varNum++;
+  return '%' + prefix + this.varNum;
+};
+
+ASTBuilder.prototype.nextGlobalVarName = function (prefix) {
+  this.varNum++;
+  return '@' + prefix + this.varNum;
+};
+
+/**
+ * Return a node for a literal of the given type
+ */
+ASTBuilder.prototype.literal = function (type, value) {
+  return new ASTNode(this, {type: type, value: value});
+};
 
 /**
  * Combine 2 branches with an appropriate llvm operator - used for add, mul, etc
  */
-function combineWithOperator (varBucket, opName, left, right) {
+ASTBuilder.prototype.combineWithOperator = function (opName, left, right) {
   if (left.type !== right.type) {
     throw 'Type mismatch: ' + left.type + ', ' + right.type;
   }
 
-  return addLLVMExpression(
-    varBucket,
-    mergeExpressions([left, right]),
+  return left.merge(right).addExpression(
     left.type,
-    opName + ' ' + left.type + ' ' + left.varName + ', ' + right.varName
+    opName + ' ' + left.type + ' ' + left.value + ', ' + right.value
   );
+};
+
+/**
+ * Return a new global declaration
+ */
+ASTBuilder.prototype.globalDeclare = function (content) {
+  return new ASTNode(this, {globalCode: content + '\n'});
+};
+
+ASTBuilder.prototype.globalConst = function (type, definition) {
+  var varName = this.nextGlobalVarName('str');
+  return new ASTNode(this, {
+    globalCode: varName + ' = ' + definition + '\n',
+    value: varName,
+    type: type
+  });
+};
+
+/**
+ * Return a node that combines an array of nodes by iterative merge
+ */
+ASTBuilder.prototype.nodeList = function (expressions) {
+  var combined = null;
+
+  expressions.forEach(function (e) {
+    if (combined === null) {
+      combined = e;
+    } else {
+      combined = combined.merge(e);
+    }
+  });
+
+  return combined;
+};
+
+/**
+ * LLVM IR generator
+ */
+function LLVM () {
+  this.builder = new ASTBuilder();
 }
 
 /**
@@ -82,7 +192,7 @@ LLVM.prototype = {
    */
   handleTop: function (blocks) {
     return blocks
-      .map(function (b) { return b.globalCode; })
+      .map(function (b) { return b.options.globalCode; })
       .join('');
   },
 
@@ -90,17 +200,14 @@ LLVM.prototype = {
    * Single function definition
    */
   handleBlock: function (name, statements) {
-    var block = mergeExpressions(statements);
-    return {
-      globalCode: block.globalCode + 'define i32 @' + name + '() {\n' + indent(block.code) + '}\n'
-    };
+    return this.builder.nodeList(statements).defineFunction(name);
   },
 
   /**
    * Return statement
    */
   handleReturnStatement: function (expr) {
-    return addLLVMStatement(expr, 'ret ' + expr.type + ' ' + expr.varName);
+    return expr.addStatement('ret ' + expr.type + ' ' + expr.value);
   },
 
   /**
@@ -113,38 +220,29 @@ LLVM.prototype = {
     return expr;
   },
   handleAdd: function (left, right) {
-    return combineWithOperator(this, 'add', left, right);
+    return this.builder.combineWithOperator('add', left, right);
   },
   handleMul: function (left, right) {
-    return combineWithOperator(this, 'mul', left, right);
+    return this.builder.combineWithOperator('mul', left, right);
   },
 
   /**
    * Function call
    */
   handleFunctionCall: function (fName, fArgs) {
-    var varBucket = this;
-
     // Cast arguments as needed
     fArgs = fArgs.map(function (arg) {
       if (arg.type !== 'i8*') {
-        return addLLVMExpression(
-          varBucket,
-          arg,
-          'i8*',
-          'getelementptr ' + arg.type + '* ' + arg.varName + ', i64 0, i64 0'
-        );
+        return arg.addExpression('i8*', 'getelementptr ' + arg.type + '* ' + arg.value + ', i64 0, i64 0');
       } else {
         return arg;
       }
     });
 
     // Call
-    return addLLVMExpression(
-      this,
-      mergeExpressions(fArgs),
+    return this.builder.nodeList(fArgs).addExpression(
       'i32',
-      'call i32 @' + fName + '(' + fArgs.map(function (b) { return b.type + ' ' + b.varName; }).join(', ') + ')'
+      'call i32 @' + fName + '(' + fArgs.map(function (b) { return b.type + ' ' + b.value; }).join(', ') + ')'
     );
   },
 
@@ -155,31 +253,23 @@ LLVM.prototype = {
    */
   handleIfBlock: function (test, pass, fail) {
     // If
-    var trueLabel = this.nextVarName('IfTrue').substr(1);
-    var contLabel = this.nextVarName('Continue').substr(1);
+    var contLabel = this.builder.nextVarName('Continue');
     var falseLabel = contLabel;
     var falseBlock = {};
 
-    var trueBlock = labelledBlock(trueLabel, addLLVMStatement(
-      mergeExpressions(pass),
-      'br label %' + contLabel
-    ));
+    pass = this.builder.nodeList(pass);
+    fail = this.builder.nodeList(fail);
+
+    var trueBlock = pass.addStatement('br label ' + contLabel).labelBlock('IfTrue');
 
     // Fail block handling for If..Else
     if (fail) {
-      falseLabel = this.nextVarName('IfFalse').substr(1);
-      falseBlock = labelledBlock(falseLabel, addLLVMStatement(
-        mergeExpressions(fail),
-        'br label %' + contLabel
-      ));
+      falseBlock = fail.addStatement('br label ' + contLabel).labelBlock('IfFalse');
     }
 
-    var branch = addLLVMStatement(test, 'br i1 ' + test.varName + ', label %' + trueLabel + ', label %' + falseLabel);
+    var branch = test.addStatement('br i1 ' + test.value + ', label ' + trueBlock.blockLabel + ', label ' + falseBlock.blockLabel);
 
-    return addLLVMStatement(
-      mergeExpressions([branch, trueBlock, falseBlock]),
-      contLabel + ':'
-    );
+    return branch.merge(trueBlock).merge(falseBlock).labelBlockEnd(contLabel);
   },
 
   // ------------------------------------------------ //
@@ -188,35 +278,24 @@ LLVM.prototype = {
    * String literals
    */
   handleString: function (value) {
-    var varName = this.nextGlobalVarName('str');
     var type = '[' + value.length + ' x i8]';
-
-    return {
-      globalCode: varName + ' = private unnamed_addr constant ' + type + ' c"'
-        + value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '"\n',
-      varName: varName,
-      type: type
-    };
+    return this.builder.globalConst(
+      type,
+      'private unnamed_addr constant ' + type + ' c"'
+        + value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '"'
+    );
   },
+
   handleFloat: function (value) {
-    return { varName: value, type: 'float' };
+    return this.builder.literal('float', value);
   },
+
   handleInt: function (value) {
-    return { varName: value, type: 'i32' };
+    return this.builder.literal('i32', value);
   },
+
   handleUse: function (name) {
-    return { globalCode: 'declare i32 @' + name + '(i8* nocapture) nounwind\n' };
-  },
-
-  // ------------------------------------------------ //
-
-  nextVarName: function (prefix) {
-    this.varNum++;
-    return '%' + prefix + this.varNum;
-  },
-  nextGlobalVarName: function (prefix) {
-    this.varNum++;
-    return '@' + prefix + this.varNum;
+    return this.builder.globalDeclare('declare i32 @' + name + '(i8* nocapture) nounwind');
   }
 };
 
