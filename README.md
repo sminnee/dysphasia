@@ -3,6 +3,7 @@ Dysphasia
 
 [![Build Status](https://travis-ci.org/sminnee/dysphasia.svg?branch=master)](https://travis-ci.org/sminnee/dysphasia)
 [![Code Climate](https://codeclimate.com/github/sminnee/dysphasia/badges/gpa.svg)](https://codeclimate.com/github/sminnee/dysphasia)
+[![Test Coverage](https://codeclimate.com/github/sminnee/dysphasia/badges/coverage.svg)](https://codeclimate.com/github/sminnee/dysphasia/coverage)
 
 At a certain point in every programmer's life, one develops the desire to create a programming language. I am no
 different. This is extremely experimental, and best thought of as an art project.
