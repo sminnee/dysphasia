@@ -1,0 +1,9 @@
+main {
+	return 3 + 4 * 2;
+}
+------
+define i32 @main() {
+  %var2 = mul i32 4, 2
+  %var3 = add i32 3, %var2
+  ret i32 %var3
+}
