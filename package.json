@@ -6,8 +6,8 @@
     "dys": "./main.js"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha",
-    "build": "node_modules/.bin/pegjs src/parser/parser.pegjs src/parser/parser.js"
+    "test": "./node_modules/.bin/mocha && ./node_modules/.bin/semistandard",
+    "build": "node_modules/.bin/pegjs src/parser/parser.pegjs src/parser/parser.min.js"
   },
   "author": "",
   "license": "BSD",
@@ -16,6 +16,12 @@
     "pegjs": "^0.8.0"
   },
   "devDependencies": {
-    "mocha": "^2.2.5"
+    "mocha": "^2.2.5",
+    "semistandard": "^7.0.2"
+  },
+  "semistandard": {
+    "ignore": [
+      "src/parser/parser.js"
+    ]
   }
 }

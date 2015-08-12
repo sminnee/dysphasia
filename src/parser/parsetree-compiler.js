@@ -22,10 +22,10 @@ ParseTree.prototype = {
     return expr;
   },
   handleAdd: function (left, right) {
-    return ['+', left, right ];
+    return ['+', left, right];
   },
   handleMul: function (left, right) {
-    return ['*', left, right ];
+    return ['*', left, right];
   }
 };
 

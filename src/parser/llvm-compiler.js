@@ -9,8 +9,8 @@
 function ASTNode (builder, options) {
   this.builder = builder;
   this.options = options;
-  if(!this.options.code) this.options.code = '';
-  if(!this.options.globalCode) this.options.globalCode = '';
+  if (!this.options.code) this.options.code = '';
+  if (!this.options.globalCode) this.options.globalCode = '';
 }
 
 Object.defineProperties(ASTNode.prototype, {
@@ -35,6 +35,9 @@ Object.defineProperties(ASTNode.prototype, {
  * Push another expression onto the end of this expression, as a subsequent statement
  */
 ASTNode.prototype.merge = function (next) {
+  // Passing null to merge is okay - it's a no-op
+  if (!next) return this;
+
   // TODO: clone next
   next.options.code = this.options.code + next.options.code;
   next.options.globalCode = this.options.globalCode + next.options.globalCode;
@@ -130,7 +133,7 @@ ASTBuilder.prototype.literal = function (type, value) {
  */
 ASTBuilder.prototype.combineWithOperator = function (opName, left, right) {
   if (left.type !== right.type) {
-    throw 'Type mismatch: ' + left.type + ', ' + right.type;
+    throw new SyntaxError('Type mismatch: ' + left.type + ', ' + right.type);
   }
 
   return left.merge(right).addExpression(
@@ -281,8 +284,8 @@ LLVM.prototype = {
     var type = '[' + value.length + ' x i8]';
     return this.builder.globalConst(
       type,
-      'private unnamed_addr constant ' + type + ' c"'
-        + value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '"'
+      'private unnamed_addr constant ' + type + ' c"' +
+        value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '"'
     );
   },
 

@@ -25,13 +25,11 @@ var actions = { 'writeLLFile': true, 'optimise': true, 'compile': true };
 
 if (opt.options['--llvm']) {
   actions = { 'writeLLFile': true, 'optimise': true, 'printLL': true };
-
 } else if (opt.options['--parse-tree']) {
   parseCallback = function (dp) {
     return JSON.stringify(dp.parseTree(), null, '  ');
   };
   actions = { 'printLL': true };
-
 } else if (opt.options['--asm']) {
   actions = { 'writeLLFile': true, 'optimise': true, 'assemble': true, 'printAssembly': true };
 }
@@ -55,6 +53,8 @@ function runCli (inputFile, parseCallback, actions) {
 
   Dysphasia.recompileParserIfNeeded(fs, './src/parser', function () {
     fs.readFile(inputFile, function (err, data) {
+      if (err) throw (err);
+
       var code = data.toString();
 
       try {
@@ -62,9 +62,9 @@ function runCli (inputFile, parseCallback, actions) {
         var compiled = parseCallback(dp);
       } catch(e) {
         if (e.offset) {
-          console.error('Parse error on line ' + e.line + ':\n' + e.message + '\n...\n'
-            + code.substr(e.offset).match(/^.*\n(.*\n)?(.*\n)?(.*\n)?/)[0]
-            + '...\n');
+          console.error('Parse error on line ' + e.line + ':\n' + e.message + '\n...\n' +
+            code.substr(e.offset).match(/^.*\n(.*\n)?(.*\n)?(.*\n)?/)[0] +
+            '...\n');
           process.exit(1);
         } else {
           throw (e);
@@ -102,6 +102,8 @@ function runCli (inputFile, parseCallback, actions) {
         }
 
         exec(LLVM_CONFIG + ' --cxxflags --ldflags --system-libs --libs core', function (err, stdout, stderr) {
+          if (err) throw (err);
+
           var flags = stdout.replace(/\n/g, ' ');
           console.log('Calling: ' + CLANG + ' ' + llFile + ' ' + flags + ' -o ' + outFile + '\n');
           exec(CLANG + ' ' + llFile + ' ' + flags + ' -o ' + outFile, function (err, stdout, stderr) {
@@ -115,4 +117,4 @@ function runCli (inputFile, parseCallback, actions) {
       }
     });
   });
-};
+}

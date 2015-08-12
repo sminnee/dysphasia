@@ -1,4 +1,4 @@
-/* global describe */
+/* global describe, it */
 
 var Dysphasia = require('../src/dysphasia');
 var assert = require('assert');
