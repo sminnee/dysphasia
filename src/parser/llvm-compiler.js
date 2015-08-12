@@ -254,20 +254,20 @@ LLVM.prototype = {
   handleIfBlock: function (test, pass, fail) {
     // If
     var contLabel = this.builder.nextVarName('Continue');
-    var falseLabel = contLabel;
-    var falseBlock = {};
+    var falseBlock = false;
 
     pass = this.builder.nodeList(pass);
-    fail = this.builder.nodeList(fail);
 
     var trueBlock = pass.addStatement('br label ' + contLabel).labelBlock('IfTrue');
 
     // Fail block handling for If..Else
     if (fail) {
+      fail = this.builder.nodeList(fail);
       falseBlock = fail.addStatement('br label ' + contLabel).labelBlock('IfFalse');
     }
 
-    var branch = test.addStatement('br i1 ' + test.value + ', label ' + trueBlock.blockLabel + ', label ' + falseBlock.blockLabel);
+    var branch = test.addStatement('br i1 ' + test.value + ', label ' + trueBlock.blockLabel + ', label ' +
+      (fail ? falseBlock.blockLabel : contLabel));
 
     return branch.merge(trueBlock).merge(falseBlock).labelBlockEnd(contLabel);
   },
