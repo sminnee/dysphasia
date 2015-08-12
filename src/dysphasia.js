@@ -34,7 +34,9 @@ var Dysphasia = {
     var outFile = basePath + '/parser.js';
 
     fs.stat(outFile, function (err, outStat) {
+      if(err) throw(err);
       fs.stat(inFile, function (err, inStat) {
+        if(err) throw(err);
         if (Date.parse(outStat.mtime) < Date.parse(inStat.mtime)) {
           Dysphasia.recompileParser(fs, inFile, outFile, callback);
         } else {
