@@ -15,6 +15,7 @@ Download
 
 	git clone https://github.com/sminnee/dysphasia.git 
 	cd dysphasia
+	npm install
 
 On OSX, you can use Homebrew to install LLVM, which is a dependency. Note that you have to use the `llvm36` package, not
 the `llvm` one.
