@@ -27,6 +27,7 @@ statementLine "statement"
 
 statement
   = ifBlock
+  / forLoop
   / returnStatement
   / expression
 
@@ -90,6 +91,38 @@ ifBlock "if block"
 elseBlock "else block"
   = "else" ws? "{" fail:blockcontent "}" ws?
     { return fail; }
+
+/**
+ * For loops
+ */
+forLoop "for loop"
+  = "for" ws? "(" ws? loopSource:loopExpression ws? ")" ws? "{" content:blockcontent "}" ws?
+    { return compiler.handleForLoop(loopSource.variable, loopSource.expression, content); }
+
+loopExpression "loop expression"
+  = expression:arrayExpression { return { variable: null, expression: expression }; }
+  / variable:symbolname ws "in" ws expression:arrayExpression { return { variable: null, expression: expression }; }
+
+arrayExpression
+  = arrayLiteral
+  / symbolname
+
+arrayLiteral
+  = start:integer ".." end:integer { return compiler.handleIntRange(start, end); }
+  / "[" ws? first:expression rest:extraArrayItems "]"
+    {
+      return compiler.handleArrayDefinition(rest ? [first].concat(rest) : [first]);
+    }
+
+extraArrayItems
+  = ws? "," ws? next:expression rest:extraFunctionArguments?
+    {
+      return next ? [next].concat(rest) : [next];
+    }
+
+/**
+ * Variables
+ */
 
 /**
  * Function imports (use)

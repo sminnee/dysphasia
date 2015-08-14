@@ -14,6 +14,9 @@ describe('Dysphasia', function () {
   it('supports use and puts', function () {
     runDPTest('test/use-puts.dptest');
   });
+  it('supports for loops', function () {
+    runDPTest('test/for-loop.dptest');
+  });
 });
 
 function runDPTest (filename) {

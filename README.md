@@ -67,11 +67,20 @@ If/then/else synax is similar to C:
 
     main {
       if(1) {
-        puts("Hello world\n");
+        puts("Hello world");
       } else {
-        puts("Goodbye world\n");
+        puts("Goodbye world");
       }
     }
+
+Loops
+-----
+
+For loops will iterate on an array. You can simply provide a list, as a way of repeating a statement a number of times:
+
+  for(1..10) {
+    puts("Show me ten times");
+  }
 
 Use
 ---

@@ -60,8 +60,9 @@ ASTNode.prototype.addStatement = function (statement) {
 /**
  * Adds an LLVM expression to the base, assigning the result to a new variable
  */
-ASTNode.prototype.addExpression = function (type, expression) {
-  var varName = this.builder.nextVarName('var');
+ASTNode.prototype.addExpression = function (type, expression, hint) {
+  if (!hint) hint = 'var';
+  var varName = this.builder.nextVarName(hint);
 
   return this.merge(new ASTNode(this.builder, {
     code: varName + ' = ' + expression + '\n',
@@ -112,6 +113,8 @@ function ASTBuilder () {
 }
 
 ASTBuilder.prototype.nextVarName = function (prefix) {
+  // If the hint starts with % then assume it has been a previously generate variable
+  if (prefix[0] === '%') return prefix;
   this.varNum++;
   return '%' + prefix + this.varNum;
 };
@@ -126,6 +129,20 @@ ASTBuilder.prototype.nextGlobalVarName = function (prefix) {
  */
 ASTBuilder.prototype.literal = function (type, value) {
   return new ASTNode(this, {type: type, value: value});
+};
+
+/**
+ * Return a node for a literal of the given type
+ */
+ASTBuilder.prototype.statement = function (code) {
+  return new ASTNode(this, {}).addStatement(code);
+};
+
+/**
+ * Return an expression
+ */
+ASTBuilder.prototype.expression = function (type, value, hint) {
+  return new ASTNode(this, {}).addExpression(type, value, hint);
 };
 
 /**
@@ -273,6 +290,65 @@ LLVM.prototype = {
       (fail ? falseBlock.blockLabel : contLabel));
 
     return branch.merge(trueBlock).merge(falseBlock).labelBlockEnd(contLabel);
+  },
+
+  /**
+   * For loop
+   */
+  handleForLoop: function (variable, loopSource, block) {
+    // TODO: Only range is handled
+    var startValue = null;
+    var endValue = null;
+    if (loopSource.type === '*range') {
+      startValue = loopSource.value.start;
+      endValue = loopSource.value.end;
+    }
+
+    var loopLabel = this.builder.nextVarName('Loop');
+    var contLabel = this.builder.nextVarName('Continue');
+    var nextVar = this.builder.nextVarName('nextvar');
+
+    // Start of loop - a labelled block that breaks to the loop
+    var entry = this.builder
+      .statement('br label ' + loopLabel)
+      .labelBlock('Entry');
+
+    entry = this.builder.statement('br label ' + entry.blockLabel).merge(entry);
+
+    // Loop block start - value is the Phi expression: our incrementor variable
+    var loop = startValue
+      .merge(endValue)
+      .addExpression('i32', 'phi i32 [ ' + startValue.value + ', ' + entry.blockLabel + ' ], [ ' + nextVar + ', ' + loopLabel + ' ]', 'i')
+      .labelBlock(loopLabel);
+
+    // Test and break
+    var test = this.builder
+      .expression('i1', 'icmp uge ' + endValue.type + ' ' + nextVar + ', ' + endValue.value, 'break');
+    test = test
+      .addStatement('br i1 ' + test.value + ', label ' + contLabel + ', label ' + loop.blockLabel);
+
+    loop = loop
+      .merge(this.builder.nodeList(block))
+      .addExpression('i32', 'add i32 ' + loop.value + ', 1', nextVar);
+
+    // Join it all together!
+    return entry.merge(loop).merge(test).labelBlockEnd(contLabel);
+  },
+
+  // ------------------------------------------------ //
+
+  /**
+   * Array literal - range expression x..y
+   */
+  handleIntRange: function (start, end) {
+    return this.builder.literal('*range', { start: start, end: end });
+  },
+
+  /**
+   * Array literal - expression [x, y, z]
+   */
+  handleArrayDefinition: function (items) {
+    return this.builder.literal('*list', items);
   },
 
   // ------------------------------------------------ //
