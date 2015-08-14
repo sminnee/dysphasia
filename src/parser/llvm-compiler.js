@@ -281,11 +281,11 @@ LLVM.prototype = {
    * String literals
    */
   handleString: function (value) {
-    var type = '[' + value.length + ' x i8]';
+    var type = '[' + (value.length + 1) + ' x i8]';
     return this.builder.globalConst(
       type,
       'private unnamed_addr constant ' + type + ' c"' +
-        value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '"'
+        value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '\\00"'
     );
   },
 

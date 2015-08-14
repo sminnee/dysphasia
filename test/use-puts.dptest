@@ -6,9 +6,9 @@ main {
 }
 ------
 declare i32 @puts(i8* nocapture) nounwind
-@str1 = private unnamed_addr constant [11 x i8] c"hello world"
+@str1 = private unnamed_addr constant [12 x i8] c"hello world\00"
 define i32 @main() {
-  %var2 = getelementptr [11 x i8]* @str1, i64 0, i64 0
+  %var2 = getelementptr [12 x i8]* @str1, i64 0, i64 0
   %var3 = call i32 @puts(i8* %var2)
   ret i32 0
 }
