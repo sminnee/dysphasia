@@ -137,6 +137,59 @@ Op.prototype.toString = function () {
 };
 
 /**
+ * A string concatenation
+ */
+function StrConcat (left, right) {
+  this.nodeType = 'StrConcat';
+
+  // Left and Right may be StrContact options too
+  if (left.nodeType === 'StrConcat') {
+    this.items = left.items;
+  } else {
+    this.items = new List([left]);
+  }
+  if (right.nodeType === 'StrConcat') {
+    this.items = this.items.concat(right.items);
+  } else {
+    this.items = this.items.concat(right);
+  }
+}
+StrConcat.prototype.toString = function () {
+  return 'StrConcat(' + this.items.toString() + ')';
+};
+
+/**
+ * A casted value
+ */
+function Cast (type, expression) {
+  this.nodeType = 'Cast';
+  this.type = type;
+  this.expression = expression;
+}
+
+/**
+ * A buffer for loading string values into
+ */
+function Buffer (variable, length) {
+  this.nodeType = 'Buffer';
+  this.variable = variable;
+  this.length = length;
+}
+Buffer.prototype.toString = function () {
+  return 'Buffer ' + this.length + ' (' + this.variable.toString() + ')';
+};
+
+/**
+ * A variable
+ */
+function Variable (type, name) {
+  this.nodeType = 'Variable';
+  this.type = type;
+  this.name = name;
+}
+Buffer.prototype.toString = function () {
+  return 'Variable ' + this.name + ' (' + this.type + ')';
+};
 
 /**
  * A reference to a type
@@ -206,6 +259,10 @@ module.exports = {
   FnCall: FnCall,
   ReturnStatement: ReturnStatement,
   Op: Op,
+  StrConcat: StrConcat,
+  Cast: Cast,
+  Buffer: Buffer,
+  Variable: Variable,
   Type: Type,
   Literal: Literal,
 

@@ -1,0 +1,17 @@
+use puts(string);
+use snprintf(buffer, int, string, ...);
+main {
+  puts("T minus " + 5 + " seconds");
+  return 0;
+}
+------
+declare i32 @puts(i8* noalias nocapture) nounwind
+declare i32 @snprintf(i8* noalias nocapture, i32, i8* noalias nocapture, ...) nounwind
+@str = private unnamed_addr constant [19 x i8] c"T minus %i seconds\00"
+define i32 @main() {
+  %strConcat = alloca i8, i32 100
+  %var = getelementptr [19 x i8]* @str, i64 0, i64 0
+  %var2 = call i32 (i8*, i32, i8*, ...)* @snprintf(i8* %strConcat, i32 100, i8* %var, i32 5)
+  %var3 = call i32 (i8*)* @puts(i8* %strConcat)
+  ret i32 0
+}

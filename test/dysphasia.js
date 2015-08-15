@@ -21,6 +21,9 @@ describe('Dysphasia', function () {
   it('supports comments', function () {
     testAST('test/comments.dptest');
   });
+  it('can convert int to string', function () {
+    testIntermediateCode('test/string-casting.dptest');
+  });
 });
 
 function testAST (filename) {

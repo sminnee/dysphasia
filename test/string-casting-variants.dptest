@@ -1,0 +1,25 @@
+main {
+  "I've called this " + 5 + " times!";
+  5 + " o'clock";
+  "Lucky number " + 5;
+}
+------
+
+------
+File ([
+  FnDef main ([
+    StrConcat([
+      Literal string ("I've called this ")
+      Literal int (5)
+      Literal string (" times!")
+    ])
+    StrConcat([
+      Literal int (5)
+      Literal string (" o'clock")
+    ])
+    StrConcat([
+      Literal string ("Lucky number ")
+      Literal int (5)
+    ])
+  ])
+])

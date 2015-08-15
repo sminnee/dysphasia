@@ -10,7 +10,7 @@ main {
 ------
 declare i32 @puts(i8* noalias nocapture) nounwind
 declare i32 @printf(i8* noalias nocapture, ...) nounwind
-declare i32 @snprintf(i8* noalias nocapture, i32 noalias nocapture, i8* noalias nocapture, ...) nounwind
+declare i32 @snprintf(i8* noalias nocapture, i32, i8* noalias nocapture, ...) nounwind
 @str = private unnamed_addr constant [12 x i8] c"hello world\00"
 @str2 = private unnamed_addr constant [20 x i8] c"I can see %i things\00"
 define i32 @main() {

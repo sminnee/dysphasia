@@ -55,7 +55,15 @@ expression
   / functionCall
 
 stringExpression
-  = value:string
+  = left:simpleType ws? "+" ws? rest:stringExpression
+    {
+      return new Dys.StrConcat(left, rest);
+    }
+  / left:string ws? "+" ws? right:simpleType
+    {
+      return new Dys.StrConcat(left, right);
+    }
+  / string
 
 /**
  * Statements can be arithmetic
@@ -225,6 +233,11 @@ string "string"
     {
       return new Dys.Literal('string', contents.join(""));
     }
+
+simpleType
+  = integer
+  / float
+  / string
 
 stringcontent "string content"
   = "\\\\" { return "\\"; }

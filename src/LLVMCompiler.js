@@ -4,12 +4,14 @@
  */
 
 var ASTBuilder = require('./ASTBuilder');
+var Dys = require('./DysAST');
 
 /**
  * LLVM IR generator
  */
 function LLVMCompiler () {
   this.builder = new ASTBuilder();
+  this.fnDefs = {};
 }
 
 LLVMCompiler.prototype.generateLLVMCode = function (ast) {
@@ -17,11 +19,35 @@ LLVMCompiler.prototype.generateLLVMCode = function (ast) {
 };
 
 /**
+ * Return a function definition for the given name
+ */
+
+LLVMCompiler.prototype.getFnDef = function (name) {
+  return this.fnDefs[name];
+};
+
+LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef) {
+  var self = this;
+
+  var argSpec = fnDef.args.map(function (arg) {
+    return self.handle(arg).type;
+  }).join(', ');
+  if (fnDef.varArgs) argSpec += ', ...';
+  return argSpec;
+};
+
+// --------------------------------------------------------------------------- //
+
+/**
  * Handle the given node
  * Dispatches to a method 'handle' + nodeType
  */
 LLVMCompiler.prototype.handle = function (ast) {
-  return this['handle' + ast.nodeType](ast);
+  if (typeof this['handle' + ast.nodeType] === 'function') {
+    return this['handle' + ast.nodeType](ast);
+  } else {
+    throw new Error('LLVMCompiler.handle' + ast.nodeType + '() not defined.');
+  }
 };
 
 /**
@@ -43,7 +69,21 @@ LLVMCompiler.prototype.handleList = function (ast) {
  * Use statement
  */
 LLVMCompiler.prototype.handleUseStatement = function (ast) {
-  return this.builder.globalDeclare('declare i32 @' + ast.name + '(i8* nocapture) nounwind');
+  var self = this;
+
+  // Log the fnDef for those who call it
+  this.fnDefs[ast.name] = ast;
+
+  // More complex argSpec than that given by getArgSpecFromFnDef as it has the 'noalias nocapture' flags
+  var argList = ast.args.map(function (arg) {
+    var type = self.handle(arg).type;
+    // Pointers have some flags
+    if (type.match(/\*$/)) type += ' noalias nocapture';
+    return type;
+  }).join(', ');
+  if (ast.varArgs) argList += ', ...';
+
+  return this.builder.globalDeclare('declare i32 @' + ast.name + '(' + argList + ') nounwind');
 };
 
 /**
@@ -131,20 +171,39 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
  */
 LLVMCompiler.prototype.handleFnCall = function (ast) {
   var llvm = this;
+
+  // Get the function definition
+  var fnDef = this.getFnDef(ast.name);
+
   // Cast arguments as needed
-  var fArgs = ast.args.map(function (ast) {
-    var arg = llvm.handle(ast);
-    if (arg.type !== 'i8*') {
-      return arg.addExpression('i8*', 'getelementptr ' + arg.type + '* ' + arg.value + ', i64 0, i64 0');
+  var fArgs = ast.args.map(function (argAst, i) {
+    // Validate source
+    if (!argAst.nodeType) {
+      throw new SyntaxError('Bad argument AST: ' + argAst);
+    }
+
+    // expectType not set for varArgs
+    var expectedType = fnDef.args.items[i] ? llvm.handle(fnDef.args.items[i]).type : null;
+    var arg = llvm.handle(argAst);
+    if (expectedType && arg.type !== expectedType) {
+      // Cast i8 const array as i8* pointer
+      if (expectedType === 'i8*' && arg.type.match(/^\[[0-9]+ x i8\]/)) {
+        return arg.addExpression('i8*', 'getelementptr ' + arg.type + '* ' + arg.value + ', i64 0, i64 0');
+      } else {
+        throw new SyntaxError('Can\'t cast "' + arg.type + ' to "' + expectedType + '" (arg ' +
+          (i + 1) + ' of ' + ast.name + ')');
+      }
     } else {
       return arg;
     }
   });
 
+  var fnArgSpec = '(' + this.argSpecFromFnDef(fnDef) + ')*';
+
   // Call
   return this.builder.nodeList(fArgs).addExpression(
     'i32',
-    'call i32 @' + ast.name + '(' + fArgs.map(function (b) { return b.type + ' ' + b.value; }).join(', ') + ')'
+    'call i32 ' + fnArgSpec + ' @' + ast.name + '(' + fArgs.map(function (b) { return b.type + ' ' + b.value; }).join(', ') + ')'
   );
 };
 
@@ -159,6 +218,49 @@ LLVMCompiler.prototype.handleReturnStatement = function (ast) {
 /**
  * Expression
  */
+LLVMCompiler.prototype.handleStrConcat = function (ast) {
+  // TO DO: myVar will need to be checked for uniqueness against a local variable registrys
+  var buffer = new Dys.Buffer(new Dys.Variable('string', 'strConcat'), 100);
+
+  // Convert into an sprintf call
+  var formatMap = {
+    'int': '%i',
+    'float': '%f',
+    'string': '%s'
+  };
+
+  var snprintfArgs = [ buffer, new Dys.Literal('int', 100), new Dys.Literal('string', '') ];
+
+  ast.items.forEach(function (item) {
+    // Compile string literals directly into the sprintf call
+    if (item.type === 'string' && item.nodeType === 'Literal') {
+      snprintfArgs[2].value += item.value;
+
+    } else if (formatMap[item.type]) {
+      snprintfArgs[2].value += formatMap[item.type];
+      snprintfArgs.push(item);
+
+    } else {
+      throw new SyntaxError("Can't embed in string: " + item.toString());
+    }
+  });
+
+  // Rewrite as AST: Call snprintf, populating the myVar variable and then return that variable
+  var newAST = new Dys.List([
+    new Dys.FnCall('snprintf', snprintfArgs),
+    buffer.variable
+  ]);
+
+//    new Dys.UseStatement('snprintf', new Dys.List([ new Dys.Type('buffer'), new Dys.Type('string'), ]))
+//    new Dys.FnCall('snprintf', sprintfArgs),
+//  ]);
+
+  return this.handle(newAST);
+};
+
+/**
+ * Expression
+ */
 LLVMCompiler.prototype.handleOp = function (ast) {
   var opMap = {
     '*': 'mul',
@@ -168,7 +270,57 @@ LLVMCompiler.prototype.handleOp = function (ast) {
 };
 
 /**
- * Array literal - range expression x..y
+ * Represents a buffer that can be loaded by another function call (usually a c-library call)
+ */
+LLVMCompiler.prototype.handleVariable = function (ast) {
+  var typeMap = {
+    'string': 'i8*',
+    'buffer': 'i8*'
+  };
+
+  // TODO: Check against a local variable registry
+  var llName = '%' + ast.name;
+
+  return this.builder.literal(typeMap[ast.type], llName);
+};
+
+/**
+ * Represents a buffer that can be loaded by another function call (usually a c-library call)
+ */
+LLVMCompiler.prototype.handleBuffer = function (ast) {
+  // Buffers only work on variables
+  if (ast.variable.nodeType !== 'Variable') {
+    throw new SyntaxError('A Buffer can only be createad for a Variable');
+  }
+
+  // Buffers only work for strings at the moment
+  if (ast.variable.type !== 'string') {
+    throw new SyntaxError('Can\'t create a Buffer for variable of type ' + ast.type);
+  }
+
+  var llVar = this.handle(ast.variable);
+  return this.builder.expression(llVar.type, 'alloca i8, i32 ' + ast.length, llVar.value);
+};
+
+/**
+ * A type reference
+ */
+LLVMCompiler.prototype.handleType = function (ast) {
+  var typeMap = {
+    'string': 'i8*',
+    'buffer': 'i8*',
+    'int': 'i32'
+  };
+
+  if (!typeMap[ast.type]) {
+    throw new SyntaxError('Unrecognised type "' + ast.type + '"');
+  }
+
+  return this.builder.literal(typeMap[ast.type], null);
+};
+
+/**
+ * Handle a literal - simple type, array or range
  */
 LLVMCompiler.prototype.handleLiteral = function (ast) {
   var llvm = this;

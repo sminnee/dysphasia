@@ -60,6 +60,19 @@ Basic mathematical expressions are supported, with `+`, `-`, `*`, `/`, and brack
 
     12 * (2 + 4)
 
+String expressions
+------------------
+
+Strings are double quoted:
+
+  "Hello!"
+
+Strings can be concatenated using `+`. Any other type that is concatenated to a string will be casted to a string:
+
+  "I've called this" + 5 + " times!"
+  5 + " o'clock"
+  "Lucky number" + 5
+
 If/then/else
 ------------
 
