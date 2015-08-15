@@ -8,18 +8,18 @@ main {
 }
 ------
 declare i32 @puts(i8* nocapture) nounwind
-@str1 = private unnamed_addr constant [12 x i8] c"hello world\00"
+@str = private unnamed_addr constant [12 x i8] c"hello world\00"
 define i32 @main() {
-  br label %Entry7
-  Entry7:
-    br label %Loop4
-  Loop4:
-    %i8 = phi i32 [ 1, %Entry7 ], [ %nextvar6, %Loop4 ]
-  %var2 = getelementptr [12 x i8]* @str1, i64 0, i64 0
-  %var3 = call i32 @puts(i8* %var2)
-  %nextvar6 = add i32 %i8, 1
-  %break9 = icmp uge i32 %nextvar6, 5
-  br i1 %break9, label %Continue5, label %Loop4
-  Continue5:
+  br label %Entry
+  Entry:
+    br label %Loop
+  Loop:
+    %i = phi i32 [ 1, %Entry ], [ %nextvar, %Loop ]
+  %var = getelementptr [12 x i8]* @str, i64 0, i64 0
+  %var2 = call i32 @puts(i8* %var)
+  %nextvar = add i32 %i, 1
+  %break = icmp uge i32 %nextvar, 5
+  br i1 %break, label %Continue, label %Loop
+  Continue:
   ret i32 0
 }

@@ -4,19 +4,29 @@ var ASTNode = require('./ASTNode');
  * Builder for an LLVM-IR AST
  */
 function ASTBuilder () {
-  this.varNum = 0;
+  this.declared = {};
 }
 
-ASTBuilder.prototype.nextVarName = function (prefix) {
+ASTBuilder.prototype.nextVarName = function (hint) {
   // If the hint starts with % then assume it has been a previously generate variable
-  if (prefix[0] === '%') return prefix;
-  this.varNum++;
-  return '%' + prefix + this.varNum;
+  if (hint[0] === '%') return hint;
+  else return this.uniqueName('%' + hint);
 };
 
-ASTBuilder.prototype.nextGlobalVarName = function (prefix) {
-  this.varNum++;
-  return '@' + prefix + this.varNum;
+ASTBuilder.prototype.nextGlobalVarName = function (hint) {
+  // If the hint starts with @ then assume it has been a previously generate variable
+  if (hint[0] === '@') return hint;
+  else return this.uniqueName('@' + hint);
+};
+
+ASTBuilder.prototype.uniqueName = function (hint) {
+  if (!this.declared[hint]) {
+    this.declared[hint] = 1;
+    return hint;
+  } else {
+    this.declared[hint]++;
+    return hint + this.declared[hint];
+  }
 };
 
 /**

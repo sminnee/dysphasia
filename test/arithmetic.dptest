@@ -3,7 +3,7 @@ main {
 }
 ------
 define i32 @main() {
-  %var1 = mul i32 4, 2
-  %var2 = add i32 3, %var1
+  %var = mul i32 4, 2
+  %var2 = add i32 3, %var
   ret i32 %var2
 }
