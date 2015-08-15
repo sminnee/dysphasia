@@ -20,6 +20,7 @@ Download
 On OSX, you can use Homebrew to install LLVM, which is a dependency. Note that you have to use the `llvm36` package, not
 the `llvm` one.
 
+	brew tap homebrew/versions
 	brew install llvm36
 
 If you install this package, then you will get `llvm-config-3.6`, `clang++-3.6`, `llc-3.6` and `opt-3.6` in your path. If
