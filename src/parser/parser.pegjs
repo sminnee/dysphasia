@@ -162,9 +162,40 @@ extraArrayItems
  * Function imports (use)
  */
 useStatement "use statement"
-  = "use" ws name:symbolname ws? ";"? ws?
+  = "use" ws name:symbolname ws? ";"? ws? "(" ws? args:useStatementParams ws? ")" ws? ";"? ws?
     {
-      return new Dys.UseStatement(name);
+      if(args && args.varArgs) {
+        return new Dys.UseStatement(name, args.types, true);
+      } else {
+        return new Dys.UseStatement(name, args, false);
+      }
+    }
+
+useStatementParams "type list"
+  = types:typeList ws? "," ws? "..."
+    {
+      return { varArgs: true, types: types }
+    }
+  / typeList
+
+typeList "type list"
+  = left:type ws? "," ws? rest:typeList
+    {
+      return new Dys.List([left, rest]);
+    }
+  / type:type
+    {
+      return new Dys.List([type]);
+    }
+
+type "type"
+  = type:("string"
+  / "buffer"
+  / "int"
+  / "float"
+  / "bool")
+    {
+      return new Dys.Type(type)
     }
 
 /**

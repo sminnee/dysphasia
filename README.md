@@ -88,8 +88,12 @@ Use
 The "use" statement can import a C function, such as puts. Right now it only works with functions that take
 a single char* argument.
 
-    use puts;
+    use puts(string);
+    use print(string, ...);
     main {
       puts("hello world");
+      printf("I can count to %i!\n", 5);
       return 0;
     }
+
+

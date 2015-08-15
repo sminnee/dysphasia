@@ -33,16 +33,30 @@ List.prototype.toString = function () {
 List.prototype.map = function (callback) {
   return this.items.map(callback);
 };
+List.prototype.forEach = function (callback) {
+  return this.items.forEach(callback);
+};
+List.prototype.concat = function (extra) {
+  if (extra.nodeType === 'List') {
+    return new List(this.items.concat(extra.items));
+  } else {
+    return new List(this.items.concat(extra));
+  }
+};
 
 /**
  * A 'use' statement for importing external functions
  */
-function UseStatement (name) {
+function UseStatement (name, args, varArgs) {
+  console.log(args);
   this.nodeType = 'UseStatement';
   this.name = name;
+  this.args = args;
+  this.varArgs = varArgs;
 }
 UseStatement.prototype.toString = function () {
-  return 'UseStatement ' + this.name;
+  return 'UseStatement ' + this.name + (this.varArgs ? ' var_args ' : ' ') + '(\n' +
+    indent(this.args.toString()) + '\n)';
 };
 
 /**
@@ -124,6 +138,25 @@ Op.prototype.toString = function () {
 };
 
 /**
+
+/**
+ * A reference to a type
+ *
+ * @param string type: int, float, string, array or range
+ * @param value:
+ *  - value for type int/float/string
+ *  - array for type array
+ *  - map { start, end } for type range
+ */
+function Type (type) {
+  this.nodeType = 'Type';
+  this.type = type;
+}
+Type.prototype.toString = function () {
+  return 'Type (' + this.type + ')';
+};
+
+/**
  * A literal value
  *
  * @param string type: int, float, string, array or range
@@ -174,6 +207,7 @@ module.exports = {
   FnCall: FnCall,
   ReturnStatement: ReturnStatement,
   Op: Op,
+  Type: Type,
   Literal: Literal,
 
   Empty: Empty

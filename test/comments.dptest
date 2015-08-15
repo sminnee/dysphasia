@@ -1,4 +1,4 @@
-use puts;
+use puts(string);
 
 // This is a sweet comment
 
@@ -9,7 +9,9 @@ main {
 
 ------
 File (
-  UseStatement puts
+  UseStatement puts (
+    Type (string)
+  )
 
   FnDef main (
     ReturnStatement (Literal int (0))
