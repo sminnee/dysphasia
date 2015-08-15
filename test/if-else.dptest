@@ -14,20 +14,20 @@ second {
 }
 ------
 define i32 @main() {
-  br i1 0, label %IfTrue2, label %IfFalse3
-  IfTrue2:
+  br i1 0, label %IfTrue, label %IfFalse
+  IfTrue:
     ret i32 2
-    br label %Continue1
-  IfFalse3:
+    br label %Continue
+  IfFalse:
     ret i32 3
-    br label %Continue1
-  Continue1:
+    br label %Continue
+  Continue:
 }
 define i32 @second() {
-  br i1 0, label %IfTrue5, label %Continue4
-  IfTrue5:
+  br i1 0, label %IfTrue2, label %Continue2
+  IfTrue2:
     ret i32 4
-    br label %Continue4
-  Continue4:
+    br label %Continue2
+  Continue2:
   ret i32 5
 }
