@@ -8,10 +8,10 @@ DysphasiaFile.prototype.parseTree = function () {
 };
 
 DysphasiaFile.prototype.generateLLVMCode = function () {
-  var LLVM = require('./parser/llvm-compiler');
+  var LLVMCompiler = require('./LLVMCompiler');
   var ast = this.parseTree();
 
-  return (new LLVM()).generateLLVMCode(ast);
+  return (new LLVMCompiler()).handle(ast);
 };
 
 var Dysphasia = {

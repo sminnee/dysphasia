@@ -8,11 +8,11 @@ var ASTBuilder = require('../ASTBuilder');
 /**
  * LLVM IR generator
  */
-function LLVM () {
+function LLVMCompiler () {
   this.builder = new ASTBuilder();
 }
 
-LLVM.prototype.generateLLVMCode = function (ast) {
+LLVMCompiler.prototype.generateLLVMCode = function (ast) {
   return this.handle(ast);
 };
 
@@ -20,21 +20,21 @@ LLVM.prototype.generateLLVMCode = function (ast) {
  * Handle the given node
  * Dispatches to a method 'handle' + nodeType
  */
-LLVM.prototype.handle = function (ast) {
+LLVMCompiler.prototype.handle = function (ast) {
   return this['handle' + ast.nodeType](ast);
 };
 
 /**
  * Overall file
  */
-LLVM.prototype.handleFile = function (ast) {
+LLVMCompiler.prototype.handleFile = function (ast) {
   return this.handle(ast.statements).options.globalCode;
 };
 
 /**
  * List of statemtns
  */
-LLVM.prototype.handleList = function (ast) {
+LLVMCompiler.prototype.handleList = function (ast) {
   var llvm = this;
   return this.builder.nodeList(ast.items.map(function (i) { return llvm.handle(i); }));
 };
@@ -42,21 +42,21 @@ LLVM.prototype.handleList = function (ast) {
 /**
  * Use statement
  */
-LLVM.prototype.handleUseStatement = function (ast) {
+LLVMCompiler.prototype.handleUseStatement = function (ast) {
   return this.builder.globalDeclare('declare i32 @' + ast.name + '(i8* nocapture) nounwind');
 };
 
 /**
  * Single function definition
  */
-LLVM.prototype.handleFnDef = function (ast) {
+LLVMCompiler.prototype.handleFnDef = function (ast) {
   return this.handle(ast.statements).defineFunction(ast.name);
 };
 
 /**
  * If and If/Else block
  */
-LLVM.prototype.handleIfBlock = function (ast) {
+LLVMCompiler.prototype.handleIfBlock = function (ast) {
   // If
   var contLabel = this.builder.nextVarName('Continue');
   var falseBlock = false;
@@ -82,7 +82,7 @@ LLVM.prototype.handleIfBlock = function (ast) {
 /**
  * For loop
  */
-LLVM.prototype.handleForLoop = function (ast) {
+LLVMCompiler.prototype.handleForLoop = function (ast) {
   // var variable = this.handle(ast.variable);
   var loopSource = this.handle(ast.loopSource);
   var block = this.handle(ast.statements);
@@ -129,7 +129,7 @@ LLVM.prototype.handleForLoop = function (ast) {
 /**
  * Function call
  */
-LLVM.prototype.handleFnCall = function (ast) {
+LLVMCompiler.prototype.handleFnCall = function (ast) {
   var llvm = this;
   // Cast arguments as needed
   var fArgs = ast.args.map(function (ast) {
@@ -151,7 +151,7 @@ LLVM.prototype.handleFnCall = function (ast) {
 /**
  * Return statement
  */
-LLVM.prototype.handleReturnStatement = function (ast) {
+LLVMCompiler.prototype.handleReturnStatement = function (ast) {
   var expr = this.handle(ast.expression);
   return expr.addStatement('ret ' + expr.type + ' ' + expr.value);
 };
@@ -159,7 +159,7 @@ LLVM.prototype.handleReturnStatement = function (ast) {
 /**
  * Expression
  */
-LLVM.prototype.handleOp = function (ast) {
+LLVMCompiler.prototype.handleOp = function (ast) {
   var opMap = {
     '*': 'mul',
     '+': 'add'
@@ -170,7 +170,7 @@ LLVM.prototype.handleOp = function (ast) {
 /**
  * Array literal - range expression x..y
  */
-LLVM.prototype.handleLiteral = function (ast) {
+LLVMCompiler.prototype.handleLiteral = function (ast) {
   var llvm = this;
   switch (ast.type) {
     case 'array':
@@ -204,4 +204,4 @@ LLVM.prototype.handleLiteral = function (ast) {
   }
 };
 
-module.exports = LLVM;
+module.exports = LLVMCompiler;
