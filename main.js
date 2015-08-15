@@ -27,7 +27,7 @@ if (opt.options['--llvm']) {
   actions = { 'writeLLFile': true, 'optimise': true, 'printLL': true };
 } else if (opt.options['--parse-tree']) {
   parseCallback = function (dp) {
-    return JSON.stringify(dp.parseTree(), null, '  ');
+    return dp.parseTree().toString();
   };
   actions = { 'printLL': true };
 } else if (opt.options['--asm']) {
