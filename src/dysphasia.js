@@ -4,14 +4,14 @@ function DysphasiaFile (input) {
 
 DysphasiaFile.prototype.parseTree = function () {
   var Parser = require('./parser/parser');
-  var ParseTree = require('./parser/parsetree-compiler');
-  return Parser.parse(this.input, { compiler: new ParseTree() });
+  return Parser.parse(this.input);
 };
 
 DysphasiaFile.prototype.generateLLVMCode = function () {
-  var Parser = require('./parser/parser');
   var LLVM = require('./parser/llvm-compiler');
-  return Parser.parse(this.input, { compiler: new LLVM() });
+  var ast = this.parseTree();
+
+  return (new LLVM()).generateLLVMCode(ast);
 };
 
 var Dysphasia = {
