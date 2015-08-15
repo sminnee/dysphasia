@@ -12,6 +12,7 @@ describe('Dysphasia', function () {
     testIntermediateCode('test/arithmetic.dptest');
   });
   it('supports use and puts', function () {
+    testAST('test/use-puts.dptest');
     testIntermediateCode('test/use-puts.dptest');
   });
   it('supports for loops', function () {

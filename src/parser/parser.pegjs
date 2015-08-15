@@ -181,7 +181,7 @@ useStatementParams "type list"
 typeList "type list"
   = left:type ws? "," ws? rest:typeList
     {
-      return new Dys.List([left, rest]);
+      return new Dys.List([left]).concat(rest);
     }
   / type:type
     {
