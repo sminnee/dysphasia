@@ -1,0 +1,17 @@
+use puts;
+
+// This is a sweet comment
+
+main {
+  return 0;
+}
+------
+
+------
+File (
+  UseStatement puts
+
+  FnDef main (
+    ReturnStatement (Literal int (0))
+  )
+)
