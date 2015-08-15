@@ -3,7 +3,7 @@
  * setting the expression value / type to that of the last expression in the list.
  */
 
-var ASTBuilder = require('../ASTBuilder');
+var ASTBuilder = require('./ASTBuilder');
 
 /**
  * LLVM IR generator
