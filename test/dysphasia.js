@@ -6,20 +6,29 @@ var fs = require('fs');
 
 describe('Dysphasia', function () {
   it('supports if statements', function () {
-    runDPTest('test/if-else.dptest');
+    testIntermediateCode('test/if-else.dptest');
   });
   it('supports basic arithmetic', function () {
-    runDPTest('test/arithmetic.dptest');
+    testIntermediateCode('test/arithmetic.dptest');
   });
   it('supports use and puts', function () {
-    runDPTest('test/use-puts.dptest');
+    testIntermediateCode('test/use-puts.dptest');
   });
   it('supports for loops', function () {
-    runDPTest('test/for-loop.dptest');
+    testIntermediateCode('test/for-loop.dptest');
+  });
+  it('supports comments', function () {
+    testAST('test/comments.dptest');
   });
 });
 
-function runDPTest (filename) {
+function testAST (filename) {
+  var parts = loadTest(filename);
+  var dp = Dysphasia.loadString(parts.source);
+  assert.equal(dp.parseTree().toString(), parts.ast);
+}
+
+function testIntermediateCode (filename) {
   var parts = loadTest(filename);
   var dp = Dysphasia.loadString(parts.source);
 
@@ -35,6 +44,7 @@ function loadTest (filename) {
 
   return {
     source: parts[0],
-    compiled: parts[1]
+    compiled: parts[1],
+    ast: parts[2]
   };
 }

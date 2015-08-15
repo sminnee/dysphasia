@@ -18,6 +18,7 @@ start
 item
   = block
   / useStatement
+  / comment
 
 block "block"
   = name:symbolname ws? "{" content:blockcontent "}" ws?
@@ -179,7 +180,14 @@ symbolname "symbol name"
  * Basic literals
  */
 ws "whitespace"
-  = [\n\r\t ]+ { return null; }
+  = wschar { return null; }
+  / comment { return null; }
+
+wschar "whitespace character"
+  = [\n\r\t ]+
+
+comment "comment"
+  = wschar? '//' p:([^\n]*) wschar? { return "" }
 
 string "string"
   = "\"" contents:stringcontent* "\""
