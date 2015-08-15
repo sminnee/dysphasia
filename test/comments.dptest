@@ -8,12 +8,12 @@ main {
 ------
 
 ------
-File (
-  UseStatement puts (
+File ([
+  UseStatement puts ([
     Type (string)
-  )
+  ])
 
-  FnDef main (
+  FnDef main ([
     ReturnStatement (Literal int (0))
-  )
-)
+  ])
+])

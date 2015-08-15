@@ -1,5 +1,6 @@
 use puts(string);
 use printf(string, ...);
+use snprintf(buffer, int, string, ...);
 
 main {
   puts("hello world");
@@ -20,21 +21,26 @@ define i32 @main() {
 }
 
 ------
-File (
-  UseStatement puts (
+File ([
+  UseStatement puts ([
     Type (string)
-  )
-  UseStatement printf var_args (
+  ])
+  UseStatement printf var_args ([
     Type (string)
-  )
-  FnDef main (
-    FnCall (puts
+  ])
+  UseStatement snprintf var_args ([
+    Type (buffer)
+    Type (int)
+    Type (string)
+  ])
+  FnDef main ([
+    FnCall (puts [
       Literal string ("hello world")
-    )
-    FnCall (printf
+    ])
+    FnCall (printf [
       Literal string ("I can see %i things")
       Literal int (5)
-    )
+    ])
     ReturnStatement (Literal int (0))
-  )
-)
+  ])
+])

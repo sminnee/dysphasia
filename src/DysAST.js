@@ -17,7 +17,7 @@ function File (statements) {
   this.statements = statements;
 }
 File.prototype.toString = function () {
-  return 'File (\n' + indent(this.statements.toString()) + '\n)';
+  return 'File (' + this.statements.toString() + ')';
 };
 
 /**
@@ -28,7 +28,7 @@ function List (items) {
   this.items = items;
 }
 List.prototype.toString = function () {
-  return this.items.map(function (item) { return item.toString(); }).join('\n');
+  return '[\n' + indent(this.items.map(function (item) { return item.toString(); }).join('\n')) + '\n]';
 };
 List.prototype.map = function (callback) {
   return this.items.map(callback);
@@ -48,15 +48,14 @@ List.prototype.concat = function (extra) {
  * A 'use' statement for importing external functions
  */
 function UseStatement (name, args, varArgs) {
-  console.log(args);
   this.nodeType = 'UseStatement';
   this.name = name;
   this.args = args;
   this.varArgs = varArgs;
 }
 UseStatement.prototype.toString = function () {
-  return 'UseStatement ' + this.name + (this.varArgs ? ' var_args ' : ' ') + '(\n' +
-    indent(this.args.toString()) + '\n)';
+  return 'UseStatement ' + this.name + (this.varArgs ? ' var_args ' : ' ') + '(' +
+    this.args.toString() + ')';
 };
 
 /**
@@ -68,7 +67,7 @@ function FnDef (name, statements) {
   this.statements = statements;
 }
 FnDef.prototype.toString = function () {
-  return 'FnDef ' + this.name + ' (\n' + indent(this.statements.toString()) + '\n)';
+  return 'FnDef ' + this.name + ' (' + this.statements.toString() + ')';
 };
 
 /**
@@ -82,8 +81,8 @@ function IfBlock (test, pass, fail) {
 }
 IfBlock.prototype.toString = function () {
   return 'IfBlock (\ntest:\n' + indent(this.test.toString()) +
-    '\npass:\n' + indent(this.pass.toString()) +
-    '\nfail:\n' + indent(this.fail.toString());
+    '\npass: ' + this.pass.toString() +
+    '\nfail: ' + this.fail.toString();
 };
 
 /**
@@ -98,7 +97,7 @@ function ForLoop (variable, loopSource, statements) {
 ForLoop.prototype.toString = function () {
   return 'ForLoop (\nvariable:\n' + indent(this.variable.toString()) +
     '\nloopSource:\n' + indent(this.loopSource.toString()) +
-    '\nstatements:\n' + indent(this.statements.toString());
+    '\nstatements: ' + this.statements.toString();
 };
 
 /**
@@ -110,7 +109,7 @@ function FnCall (name, args) {
   this.args = args;
 }
 FnCall.prototype.toString = function () {
-  return 'FnCall (' + this.name + '\n' + indent(this.args.toString()) + '\n)';
+  return 'FnCall (' + this.name + ' ' + this.args.toString() + ')';
 };
 
 /**
