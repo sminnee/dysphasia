@@ -166,6 +166,9 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
   var iterator;
   // TODO: Better empty check
   if (ast.variable.nodeType !== 'Empty') {
+    if (ast.variable.type.nodeType === 'Empty') {
+      ast.variable.type = this.getVariable(ast.variable.name);
+    }
     iterator = this.handle(ast.variable);
   } else {
     iterator = this.builder.literal('i32', '%i');
@@ -262,61 +265,6 @@ LLVMCompiler.prototype.handleReturnStatement = function (ast) {
 LLVMCompiler.prototype.handleVariableDeclaration = function (ast) {
   this.declareVariable(ast.variable.name, ast.type.type);
   return this.builder.noop();
-};
-
-/**
- * Expression
- */
-LLVMCompiler.prototype.handleStrConcat = function (ast) {
-  var self = this;
-
-  // TO DO: strConcat will need to be checked for uniqueness against a local variable registrys
-  var buffer = new Dys.Buffer(new Dys.Variable('strConcat', 'string'), 100);
-
-  // Convert into an sprintf call
-  var formatMap = {
-    'int': '%i',
-    'float': '%f',
-    'string': '%s'
-  };
-
-  var snprintfArgs = [ buffer, new Dys.Literal(100, 'int'), new Dys.Literal('', 'string') ];
-
-  ast.items.forEach(function (item) {
-    // Look up variable type
-    // TODO: This should probably be a pre-pass on the the AST
-    if (item.nodeType === 'Variable' && !item.type) {
-      var type = self.getVariable(item.name);
-      if (!type) {
-        throw new SyntaxError('Undeclared variable "' + item.name + '"');
-      }
-      item.type = type;
-    }
-
-    // Compile string literals directly into the sprintf call
-    if (item.type === 'string' && item.nodeType === 'Literal') {
-      snprintfArgs[2].value += item.value;
-
-    } else if (formatMap[item.type]) {
-      snprintfArgs[2].value += formatMap[item.type];
-      snprintfArgs.push(item);
-
-    } else {
-      throw new SyntaxError('Can\'t embed in string: ' + JSON.stringify(item));
-    }
-  });
-
-  // Rewrite as AST: Call snprintf, populating the myVar variable and then return that variable
-  var newAST = new Dys.List([
-    new Dys.FnCall('snprintf', snprintfArgs),
-    buffer.variable
-  ]);
-
-//    new Dys.UseStatement('snprintf', new Dys.List([ new Dys.Type('buffer'), new Dys.Type('string'), ]))
-//    new Dys.FnCall('snprintf', sprintfArgs),
-//  ]);
-
-  return this.handle(newAST);
 };
 
 /**

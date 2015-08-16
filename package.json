@@ -14,7 +14,8 @@
   "license": "BSD",
   "dependencies": {
     "node-getopt": "^0.2.3",
-    "pegjs": "^0.8.0"
+    "pegjs": "^0.8.0",
+    "util": "^0.10.3"
   },
   "devDependencies": {
     "codeclimate-test-reporter": "^0.1.0",

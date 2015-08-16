@@ -9,7 +9,13 @@ DysphasiaFile.prototype.parseTree = function () {
 
 DysphasiaFile.prototype.generateLLVMCode = function () {
   var LLVMCompiler = require('./LLVMCompiler');
+  var StrConcatToCLibrary = require('./ast-transforms/StrConcatToCLibrary');
+
+  // Basic AST
   var ast = this.parseTree();
+
+  // AST transformations
+  ast = (new StrConcatToCLibrary()).handle(ast);
 
   return (new LLVMCompiler()).handle(ast);
 };

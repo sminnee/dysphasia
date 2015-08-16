@@ -39,9 +39,14 @@ function File (statements) {
   this.nodeType = 'File';
   this.statements = statements;
 }
+
 File.prototype.toString = function () {
   return 'File (' + this.statements.toString() + ')';
 };
+
+File.prototype.transformChildren = function (transformer) {
+  return new File(transformer(this.statements));
+}
 
 /**
  * An ordered list of AST nodes
@@ -55,6 +60,10 @@ function List (items) {
 List.prototype.toString = function () {
   return '[\n' + indent(this.items.map(function (item) { return item.toString(); }).join('\n')) + '\n]';
 };
+
+List.prototype.transformChildren = function (transformer) {
+  return new List(this.items.map(transformer));
+}
 
 List.prototype.map = function (callback) {
   return this.items.map(callback);
@@ -83,9 +92,14 @@ function UseStatement (name, args, varArgs) {
   this.args = args;
   this.varArgs = varArgs;
 }
+
 UseStatement.prototype.toString = function () {
   return 'UseStatement ' + this.name + (this.varArgs ? ' var_args ' : ' ') + '(' +
     this.args.toString() + ')';
+};
+
+UseStatement.prototype.transformChildren = function (transformer) {
+  return new UseStatement(this.name, transformer(this.args), this.varArgs);
 };
 
 /**
@@ -96,8 +110,13 @@ function FnDef (name, statements) {
   this.name = name;
   this.statements = statements;
 }
+
 FnDef.prototype.toString = function () {
   return 'FnDef ' + this.name + ' (' + this.statements.toString() + ')';
+};
+
+FnDef.prototype.transformChildren = function (transformer) {
+  return new FnDef(this.name, transformer(this.statements));
 };
 
 /**
@@ -109,10 +128,15 @@ function IfBlock (test, pass, fail) {
   this.pass = pass;
   this.fail = fail;
 }
+
 IfBlock.prototype.toString = function () {
   return 'IfBlock (\ntest:\n' + indent(this.test.toString()) +
     '\npass: ' + this.pass.toString() +
     '\nfail: ' + this.fail.toString();
+};
+
+IfBlock.prototype.transformChildren = function (transformer) {
+  return new IfBlock(transformer(this.test), transformer(this.pass), transformer(this.fail));
 };
 
 /**
@@ -124,10 +148,15 @@ function ForLoop (variable, loopSource, statements) {
   this.loopSource = loopSource;
   this.statements = statements;
 }
+
 ForLoop.prototype.toString = function () {
   return 'ForLoop (\nvariable:\n' + indent(this.variable.toString()) +
     '\nloopSource:\n' + indent(this.loopSource.toString()) +
     '\nstatements: ' + this.statements.toString() + ')';
+};
+
+ForLoop.prototype.transformChildren = function (transformer) {
+  return new ForLoop(transformer(this.variable), transformer(this.loopSource), transformer(this.statements));
 };
 
 /**
@@ -138,8 +167,13 @@ function FnCall (name, args) {
   this.name = name;
   this.args = args;
 }
+
 FnCall.prototype.toString = function () {
   return 'FnCall (' + this.name + ' ' + this.args.toString() + ')';
+};
+
+FnCall.prototype.transformChildren = function (transformer) {
+  return new FnCall(this.name, transformer(this.args));
 };
 
 /**
@@ -149,8 +183,13 @@ function ReturnStatement (expression) {
   this.nodeType = 'ReturnStatement';
   this.expression = expression;
 }
+
 ReturnStatement.prototype.toString = function () {
   return 'ReturnStatement (' + this.expression.toString() + ')';
+};
+
+ReturnStatement.prototype.transformChildren = function (transformer) {
+  return new ReturnStatement(transformer(this.expression));
 };
 
 /**
@@ -168,8 +207,13 @@ function VariableDeclaration (variable, type) {
   this.type = type;
   this.variable = variable;
 }
+
 VariableDeclaration.prototype.toString = function () {
   return 'VariableDeclaration (' + this.type + ', ' + this.variable + ')';
+};
+
+VariableDeclaration.prototype.transformChildren = function (transformer) {
+  return new VariableDeclaration(transformer(this.variable), transformer(this.type));
 };
 
 /**
@@ -181,8 +225,13 @@ function Op (op, left, right) {
   this.left = left;
   this.right = right;
 }
+
 Op.prototype.toString = function () {
   return 'Op (' + this.op + '\n' + indent(this.left.toString() + '\n' + this.right.toString()) + '\n)';
+};
+
+Op.prototype.transformChildren = function (transformer) {
+  return new Op(this.op, transformer(this.left), transformer(this.right));
 };
 
 /**
@@ -200,14 +249,22 @@ function StrConcat (left, right) {
   } else {
     this.items = new List([left]);
   }
-  if (right.nodeType === 'StrConcat') {
-    this.items = this.items.concat(right.items);
-  } else {
-    this.items = this.items.concat(right);
+  // Right is optional - left may simply be a list
+  if (right) {
+    if (right.nodeType === 'StrConcat') {
+      this.items = this.items.concat(right.items);
+    } else {
+      this.items = this.items.concat(right);
+    }
   }
 }
+
 StrConcat.prototype.toString = function () {
   return 'StrConcat(' + this.items.toString() + ')';
+};
+
+StrConcat.prototype.transformChildren = function (transformer) {
+  return new StrConcat(transformer(this.items));
 };
 
 /**
@@ -219,6 +276,14 @@ function Cast (type, expression) {
   this.expression = expression;
 }
 
+Cast.prototype.toString = function () {
+  return 'Cast (' + this.type.toString() + ' ' + this.expression.toString() + ')';
+};
+
+Cast.prototype.transformChildren = function (transformer) {
+  return new Cast(transformer(this.type), transformer(this.expression));
+};
+
 /**
  * A buffer for loading string values into
  */
@@ -227,8 +292,13 @@ function Buffer (variable, length) {
   this.variable = variable;
   this.length = length;
 }
+
 Buffer.prototype.toString = function () {
   return 'Buffer ' + this.length + ' (' + this.variable.toString() + ')';
+};
+
+Buffer.prototype.transformChildren = function (transformer) {
+  return new Buffer(transformer(this.variable), this.length);
 };
 
 /**
@@ -237,14 +307,19 @@ Buffer.prototype.toString = function () {
 function Variable (name, type) {
   this.nodeType = 'Variable';
   this.name = name;
-  this.type = type;
+  this.type = type ? type : Empty;
 }
+
 Variable.prototype.toString = function () {
-  if (this.type) {
+  if (this.type && this.type !== Empty) {
     return 'Variable ' + this.type + ' (' + this.name + ')';
   } else {
     return 'Variable (' + this.name + ')';
   }
+};
+
+Variable.prototype.transformChildren = function (transformer) {
+  return new Variable(this.name, transformer(this.type));
 };
 
 /**
@@ -260,8 +335,13 @@ function Type (type) {
   this.nodeType = 'Type';
   this.type = type;
 }
+
 Type.prototype.toString = function () {
   return 'Type (' + this.type + ')';
+};
+
+Type.prototype.transformChildren = function () {
+  return this;
 };
 
 /**
@@ -278,6 +358,7 @@ function Literal (value, type) {
   this.type = type;
   this.value = value;
 }
+
 Literal.prototype.toString = function () {
   var val;
   switch (this.type) {
@@ -291,6 +372,10 @@ Literal.prototype.toString = function () {
   return 'Literal ' + this.type + ' (' + val + ')';
 };
 
+Literal.prototype.transformChildren = function () {
+  return this;
+};
+
 /**
  * A null value
  * We use this singleton to represent unset parameters for type consistency
@@ -299,6 +384,9 @@ var Empty = {
   nodeType: 'Empty',
   toString: function () {
     return 'Empty';
+  },
+  transformChildren: function () {
+    return Empty;
   }
 };
 
