@@ -163,6 +163,14 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
     endValue = loopSource.value.end;
   }
 
+  var iterator;
+  // TODO: Better empty check
+  if (ast.variable.nodeType !== 'Empty') {
+    iterator = this.handle(ast.variable);
+  } else {
+    iterator = this.builder.literal('i32', '%i');
+  }
+
   var loopLabel = this.builder.nextVarName('Loop');
   var contLabel = this.builder.nextVarName('Continue');
   var nextVar = this.builder.nextVarName('nextvar');
@@ -177,12 +185,14 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
   // Loop block start - value is the Phi expression: our incrementor variable
   var loop = startValue
     .merge(endValue)
-    .addExpression('i32', 'phi i32 [ ' + startValue.value + ', ' + entry.blockLabel + ' ], [ ' + nextVar + ', ' + loopLabel + ' ]', 'i')
+    .addExpression(iterator.type, 'phi ' + iterator.type +
+      ' [ ' + startValue.value + ', ' + entry.blockLabel +
+      ' ], [ ' + nextVar + ', ' + loopLabel + ' ]', iterator.value)
     .labelBlock(loopLabel);
 
   // Test and break
   var test = this.builder
-    .expression('i1', 'icmp uge ' + endValue.type + ' ' + nextVar + ', ' + endValue.value, 'break');
+    .expression('i1', 'icmp ugt ' + endValue.type + ' ' + nextVar + ', ' + endValue.value, 'break');
   test = test
     .addStatement('br i1 ' + test.value + ', label ' + contLabel + ', label ' + loop.blockLabel);
 
