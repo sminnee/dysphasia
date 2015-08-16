@@ -154,6 +154,25 @@ ReturnStatement.prototype.toString = function () {
 };
 
 /**
+ * A variable declaration
+ */
+function VariableDeclaration (variable, type) {
+  if (type.nodeType !== 'Type') {
+    throw new SyntaxError('VariableDeclaration type must be a Dys.Type object');
+  }
+  if (variable.nodeType !== 'Variable') {
+    throw new SyntaxError('VariableDeclaration variable must be a Dys.Variable object');
+  }
+
+  this.nodeType = 'VariableDeclaration';
+  this.type = type;
+  this.variable = variable;
+}
+VariableDeclaration.prototype.toString = function () {
+  return 'VariableDeclaration (' + this.type + ', ' + this.variable + ')';
+};
+
+/**
  * A binary operation
  */
 function Op (op, left, right) {
@@ -215,13 +234,17 @@ Buffer.prototype.toString = function () {
 /**
  * A variable
  */
-function Variable (type, name) {
+function Variable (name, type) {
   this.nodeType = 'Variable';
-  this.type = type;
   this.name = name;
+  this.type = type;
 }
-Buffer.prototype.toString = function () {
-  return 'Variable ' + this.name + ' (' + this.type + ')';
+Variable.prototype.toString = function () {
+  if (this.type) {
+    return 'Variable ' + this.type + ' (' + this.name + ')';
+  } else {
+    return 'Variable (' + this.name + ')';
+  }
 };
 
 /**
@@ -250,7 +273,7 @@ Type.prototype.toString = function () {
  *  - array for type array
  *  - map { start, end } for type range
  */
-function Literal (type, value) {
+function Literal (value, type) {
   this.nodeType = 'Literal';
   this.type = type;
   this.value = value;
@@ -291,6 +314,8 @@ module.exports = {
 
   FnCall: FnCall,
   ReturnStatement: ReturnStatement,
+  VariableDeclaration: VariableDeclaration,
+
   Op: Op,
   StrConcat: StrConcat,
   Cast: Cast,

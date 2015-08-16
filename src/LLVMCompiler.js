@@ -12,6 +12,7 @@ var Dys = require('./DysAST');
 function LLVMCompiler () {
   this.builder = new ASTBuilder();
   this.fnDefs = {};
+  this.varDefs = {};
 }
 
 LLVMCompiler.prototype.generateLLVMCode = function (ast) {
@@ -19,9 +20,21 @@ LLVMCompiler.prototype.generateLLVMCode = function (ast) {
 };
 
 /**
+ * Return a compiler helper for a particular method
+ * Ensures local variable declarations stay local
+ */
+LLVMCompiler.prototype.forMethod = function (methodName) {
+  var self = this;
+  var l = new LLVMCompiler();
+  l.builder = this.builder;
+  l.getFnDef = function (name) { return self.getFnDef(name); };
+  l.argSpecFromFnDef = function (name) { return self.argSpecFromFnDef(name); };
+  return l;
+};
+
+/**
  * Return a function definition for the given name
  */
-
 LLVMCompiler.prototype.getFnDef = function (name) {
   return this.fnDefs[name];
 };
@@ -34,6 +47,13 @@ LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef) {
   }).join(', ');
   if (fnDef.varArgs) argSpec += ', ...';
   return argSpec;
+};
+
+LLVMCompiler.prototype.declareVariable = function (name, type) {
+  this.varDefs[name] = type;
+};
+LLVMCompiler.prototype.getVariable = function (name) {
+  return this.varDefs[name];
 };
 
 // --------------------------------------------------------------------------- //
@@ -98,7 +118,7 @@ LLVMCompiler.prototype.handleUseStatement = function (ast) {
  * Single function definition
  */
 LLVMCompiler.prototype.handleFnDef = function (ast) {
-  return this.handle(ast.statements).defineFunction(ast.name);
+  return this.forMethod(ast.name).handle(ast.statements).defineFunction(ast.name);
 };
 
 /**
@@ -227,11 +247,21 @@ LLVMCompiler.prototype.handleReturnStatement = function (ast) {
 };
 
 /**
+ * Return statement
+ */
+LLVMCompiler.prototype.handleVariableDeclaration = function (ast) {
+  this.declareVariable(ast.variable.name, ast.type.type);
+  return this.builder.noop();
+};
+
+/**
  * Expression
  */
 LLVMCompiler.prototype.handleStrConcat = function (ast) {
-  // TO DO: myVar will need to be checked for uniqueness against a local variable registrys
-  var buffer = new Dys.Buffer(new Dys.Variable('string', 'strConcat'), 100);
+  var self = this;
+
+  // TO DO: strConcat will need to be checked for uniqueness against a local variable registrys
+  var buffer = new Dys.Buffer(new Dys.Variable('strConcat', 'string'), 100);
 
   // Convert into an sprintf call
   var formatMap = {
@@ -240,9 +270,19 @@ LLVMCompiler.prototype.handleStrConcat = function (ast) {
     'string': '%s'
   };
 
-  var snprintfArgs = [ buffer, new Dys.Literal('int', 100), new Dys.Literal('string', '') ];
+  var snprintfArgs = [ buffer, new Dys.Literal(100, 'int'), new Dys.Literal('', 'string') ];
 
   ast.items.forEach(function (item) {
+    // Look up variable type
+    // TODO: This should probably be a pre-pass on the the AST
+    if (item.nodeType === 'Variable' && !item.type) {
+      var type = self.getVariable(item.name);
+      if (!type) {
+        throw new SyntaxError('Undeclared variable "' + item.name + '"');
+      }
+      item.type = type;
+    }
+
     // Compile string literals directly into the sprintf call
     if (item.type === 'string' && item.nodeType === 'Literal') {
       snprintfArgs[2].value += item.value;
@@ -284,15 +324,18 @@ LLVMCompiler.prototype.handleOp = function (ast) {
  * Represents a buffer that can be loaded by another function call (usually a c-library call)
  */
 LLVMCompiler.prototype.handleVariable = function (ast) {
+  var type = ast.type ? ast.type : this.getVariable(ast.name);
+
   var typeMap = {
     'string': 'i8*',
-    'buffer': 'i8*'
+    'buffer': 'i8*',
+    'int': 'i32'
   };
 
   // TODO: Check against a local variable registry
   var llName = '%' + ast.name;
 
-  return this.builder.literal(typeMap[ast.type], llName);
+  return this.builder.literal(typeMap[type], llName);
 };
 
 /**

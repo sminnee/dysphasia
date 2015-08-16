@@ -40,6 +40,7 @@ statement
   = ifBlock
   / forLoop
   / returnStatement
+  / variableDeclaration
   / expression
 
 returnStatement
@@ -49,16 +50,16 @@ returnStatement
     }
 
 expression
-  = stringExpression
+  = functionCall
+  / stringExpression
   / arithmeticExpression
-  / functionCall
 
 stringExpression
-  = left:simpleType ws? "+" ws? rest:stringExpression
+  = left:simpleTypeOrVariable ws? "+" ws? rest:stringExpression
     {
       return new Dys.StrConcat(left, rest);
     }
-  / left:string ws? "+" ws? right:simpleType
+  / left:string ws? "+" ws? right:simpleTypeOrVariable
     {
       return new Dys.StrConcat(left, right);
     }
@@ -86,11 +87,12 @@ multiplicative
   / primary
 
 primary
-  = integer
-  / "(" ws? additive:additive ws? ")"
+  = "(" ws? additive:additive ws? ")"
     {
       return additive;
     }
+  / integer
+  / variable
 
 /**
  * FunctionCall
@@ -141,18 +143,18 @@ forLoop "for loop"
     }
 
 loopExpression "loop expression"
-  = expression:arrayExpression { return { variable: null, expression: expression }; }
-  / variable:symbolname ws "in" ws expression:arrayExpression { return { variable: null, expression: expression }; }
+  = variable:variable ws "in" ws expression:arrayExpression { return { variable: variable, expression: expression }; }
+  / expression:arrayExpression { return { variable: null, expression: expression }; }
 
 arrayExpression
   = arrayLiteral
-  / symbolname
+  / variable
 
 arrayLiteral
-  = start:integer ".." end:integer { return new Dys.Literal('range', { start: start, end: end }); }
+  = start:integer ".." end:integer { return new Dys.Literal({ start: start, end: end }, 'range'); }
   / "[" ws? first:expression rest:extraArrayItems "]"
     {
-      return new Dys.Literal('array', new Dys.List(rest ? [first].concat(rest) : [first]))
+      return new Dys.Literal(new Dys.List(rest ? [first].concat(rest) : [first]), 'array')
     }
 
 extraArrayItems
@@ -205,15 +207,26 @@ type "type"
       return new Dys.Type(type)
     }
 
+variable "variable"
+  = name:symbolname
+    {
+      return new Dys.Variable(name);
+    }
+
 /**
  * Function name, etc
  */
 symbolname "symbol name"
-  = lchar:[A-Za-z] rchars:[A-Za-z0-9_]+
+  = lchar:[A-Za-z] rchars:[A-Za-z0-9_]*
     {
       return lchar + rchars.join("");
     }
 
+variableDeclaration
+  = type:type ws name:variable
+    {
+      return new Dys.VariableDeclaration(name, type);
+    }
 /**
  * Basic literals
  */
@@ -230,13 +243,18 @@ comment "comment"
 string "string"
   = "\"" contents:stringcontent* "\""
     {
-      return new Dys.Literal('string', contents.join(""));
+      return new Dys.Literal(contents.join(""), 'string');
     }
 
-simpleType
+simpleTypeOrVariable
   = integer
   / float
   / string
+  / variable
+
+integerOrVariable
+  = integer
+  / variable
 
 stringcontent "string content"
   = "\\\\" { return "\\"; }
@@ -249,11 +267,11 @@ stringcontent "string content"
 integer "integer"
   = digits:[0-9]+
   {
-    return new Dys.Literal('int', parseInt(digits.join(""), 10));
+    return new Dys.Literal(parseInt(digits.join(""), 10), 'int');
   }
 
 float "floating point"
   = leftdigits:[0-9]+ "." rightdigits:[0-9]+
   {
-    return new Dys.Literal('float', parseFloat(leftdigits.join("") + "." + rightdigits.join(), 10));
+    return new Dys.Literal(parseFloat(leftdigits.join("") + "." + rightdigits.join(), 10), 'float');
   }
