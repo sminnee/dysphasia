@@ -12,7 +12,6 @@ File ([
   UseStatement puts ([
     Type (string)
   ])
-
   FnDef main ([
     ReturnStatement (Literal int (0))
   ])
