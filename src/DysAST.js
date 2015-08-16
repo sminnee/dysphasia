@@ -10,6 +10,29 @@ function indent (str) {
 }
 
 /**
+ * Validate a single item, throw a SyntaxError if there is a bad one
+ */
+function validateItem (item, className) {
+  if (typeof className !== 'string') className = 'List';
+
+  if (!item || !item.nodeType) {
+    throw new SyntaxError('Can\'t add item to Dys.' + className + ': ' + item);
+  }
+}
+
+/**
+ * Validate an array of items, throw a SyntaxError if there is a bad one
+ * If singleItemAllowed is true, then a single item will also be valid
+ */
+function validateItems (items, singleItemAllowed) {
+  if (items && items.nodeType && singleItemAllowed === true) {
+    return true;
+  }
+
+  items.forEach(validateItem);
+}
+
+/**
  * A Dysphasia file
  */
 function File (statements) {
@@ -25,21 +48,28 @@ File.prototype.toString = function () {
  */
 function List (items) {
   this.nodeType = 'List';
+  validateItems(items);
   this.items = items;
 }
+
 List.prototype.toString = function () {
   return '[\n' + indent(this.items.map(function (item) { return item.toString(); }).join('\n')) + '\n]';
 };
+
 List.prototype.map = function (callback) {
   return this.items.map(callback);
 };
+
 List.prototype.forEach = function (callback) {
   return this.items.forEach(callback);
 };
+
 List.prototype.concat = function (extra) {
   if (extra.nodeType === 'List') {
     return new List(this.items.concat(extra.items));
+
   } else {
+    validateItems(extra, true);
     return new List(this.items.concat(extra));
   }
 };
@@ -97,7 +127,7 @@ function ForLoop (variable, loopSource, statements) {
 ForLoop.prototype.toString = function () {
   return 'ForLoop (\nvariable:\n' + indent(this.variable.toString()) +
     '\nloopSource:\n' + indent(this.loopSource.toString()) +
-    '\nstatements: ' + this.statements.toString();
+    '\nstatements: ' + this.statements.toString() + ')';
 };
 
 /**
@@ -141,6 +171,9 @@ Op.prototype.toString = function () {
  */
 function StrConcat (left, right) {
   this.nodeType = 'StrConcat';
+
+  validateItem(left, 'StrConcat');
+  validateItem(right, 'StrConcat');
 
   // Left and Right may be StrContact options too
   if (left.nodeType === 'StrConcat') {

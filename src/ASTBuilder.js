@@ -30,6 +30,14 @@ ASTBuilder.prototype.uniqueName = function (hint) {
 };
 
 /**
+ * Return a null-object ASTNode.
+ * Return this instead of null if your handler doesn't need to change the code.
+ */
+ASTBuilder.prototype.noop = function () {
+  return new ASTNode(this, {});
+};
+
+/**
  * Return a node for a literal of the given type
  */
 ASTBuilder.prototype.literal = function (type, value) {
@@ -87,6 +95,9 @@ ASTBuilder.prototype.nodeList = function (expressions) {
   var combined = null;
 
   expressions.forEach(function (e) {
+    if (!e) {
+      throw new Error('Bad item in nodeList: ' + JSON.stringify(expressions));
+    }
     if (combined === null) {
       combined = e;
     } else {

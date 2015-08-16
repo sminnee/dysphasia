@@ -43,8 +43,16 @@ LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef) {
  * Dispatches to a method 'handle' + nodeType
  */
 LLVMCompiler.prototype.handle = function (ast) {
+  if (!ast.nodeType) {
+    throw new Error('Bad AST passed to handle(): ' + JSON.stringify(ast));
+  }
   if (typeof this['handle' + ast.nodeType] === 'function') {
-    return this['handle' + ast.nodeType](ast);
+    var result = this['handle' + ast.nodeType](ast);
+    if (!result) {
+      throw new Error('LLVMCompiler.handle' + ast.nodeType + ' didn\'t return a value');
+    }
+    return result;
+
   } else {
     throw new Error('LLVMCompiler.handle' + ast.nodeType + '() not defined.');
   }
@@ -174,6 +182,9 @@ LLVMCompiler.prototype.handleFnCall = function (ast) {
 
   // Get the function definition
   var fnDef = this.getFnDef(ast.name);
+  if (!fnDef) {
+    throw new SyntaxError('Can\'t find function ' + ast.name);
+  }
 
   // Cast arguments as needed
   var fArgs = ast.args.map(function (argAst, i) {
@@ -241,7 +252,7 @@ LLVMCompiler.prototype.handleStrConcat = function (ast) {
       snprintfArgs.push(item);
 
     } else {
-      throw new SyntaxError("Can't embed in string: " + item.toString());
+      throw new SyntaxError('Can\'t embed in string: ' + JSON.stringify(item));
     }
   });
 
