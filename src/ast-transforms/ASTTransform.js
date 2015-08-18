@@ -2,7 +2,7 @@
  * Base class of AST transformations
  * AST transformations are used to do preliminary steps before passing the AST ot to the LLVM compiler.
  * The goal is to reduce the complexity of the LLVM compiler.
- * 
+ *
  * To create your own transformation, subclass ASTTransform and override the applicable handle() methods.
  */
 function ASTTransform () {

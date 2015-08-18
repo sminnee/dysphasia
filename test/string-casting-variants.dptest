@@ -8,18 +8,18 @@ main {
 ------
 File ([
   FnDef main ([
-    StrConcat([
-      Literal string ("I've called this ")
-      Literal int (5)
-      Literal string (" times!")
+    StrConcat [Type string] ([
+      Literal [Type string] (I've called this )
+      Literal [Type int] (5)
+      Literal [Type string] ( times!)
     ])
-    StrConcat([
-      Literal int (5)
-      Literal string (" o'clock")
+    StrConcat [Type string] ([
+      Literal [Type int] (5)
+      Literal [Type string] ( o'clock)
     ])
-    StrConcat([
-      Literal string ("Lucky number ")
-      Literal int (5)
+    StrConcat [Type string] ([
+      Literal [Type string] (Lucky number )
+      Literal [Type int] (5)
     ])
   ])
 ])

@@ -61,14 +61,10 @@ ASTBuilder.prototype.expression = function (type, value, hint) {
 /**
  * Combine 2 branches with an appropriate llvm operator - used for add, mul, etc
  */
-ASTBuilder.prototype.combineWithOperator = function (opName, left, right) {
-  if (left.type !== right.type) {
-    throw new SyntaxError('Type mismatch: ' + left.type + ', ' + right.type);
-  }
-
+ASTBuilder.prototype.combineWithOperator = function (opName, type, left, right) {
   return left.merge(right).addExpression(
-    left.type,
-    opName + ' ' + left.type + ' ' + left.value + ', ' + right.value
+    type,
+    opName + ' ' + type + ' ' + left.value + ', ' + right.value
   );
 };
 

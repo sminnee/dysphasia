@@ -1,3 +1,7 @@
+var LLVMCompiler = require('./LLVMCompiler');
+var StrConcatToCLibrary = require('./ast-transforms/StrConcatToCLibrary');
+var InferTypes = require('./ast-transforms/InferTypes');
+
 function DysphasiaFile (input) {
   this.input = input;
 }
@@ -8,13 +12,11 @@ DysphasiaFile.prototype.parseTree = function () {
 };
 
 DysphasiaFile.prototype.generateLLVMCode = function () {
-  var LLVMCompiler = require('./LLVMCompiler');
-  var StrConcatToCLibrary = require('./ast-transforms/StrConcatToCLibrary');
-
   // Basic AST
   var ast = this.parseTree();
 
   // AST transformations
+  ast = (new InferTypes()).handle(ast);
   ast = (new StrConcatToCLibrary()).handle(ast);
 
   return (new LLVMCompiler()).handle(ast);

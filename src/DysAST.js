@@ -33,6 +33,20 @@ function validateItems (items, singleItemAllowed) {
 }
 
 /**
+ * A null value
+ * We use this singleton to represent unset parameters for type consistency
+ */
+var Empty = {
+  nodeType: 'Empty',
+  toString: function () {
+    return 'Empty';
+  },
+  transformChildren: function () {
+    return Empty;
+  }
+};
+
+/**
  * A Dysphasia file
  */
 function File (statements) {
@@ -46,7 +60,7 @@ File.prototype.toString = function () {
 
 File.prototype.transformChildren = function (transformer) {
   return new File(transformer(this.statements));
-}
+};
 
 /**
  * An ordered list of AST nodes
@@ -54,7 +68,7 @@ File.prototype.transformChildren = function (transformer) {
 function List (items) {
   this.nodeType = 'List';
   validateItems(items);
-  this.items = items;
+  this.items = items.filter(function (item) { return item.nodeType !== 'Empty'; });
 }
 
 List.prototype.toString = function () {
@@ -63,7 +77,7 @@ List.prototype.toString = function () {
 
 List.prototype.transformChildren = function (transformer) {
   return new List(this.items.map(transformer));
-}
+};
 
 List.prototype.map = function (callback) {
   return this.items.map(callback);
@@ -179,17 +193,19 @@ FnCall.prototype.transformChildren = function (transformer) {
 /**
  * A 'return' statement
  */
-function ReturnStatement (expression) {
+function ReturnStatement (expression, type) {
   this.nodeType = 'ReturnStatement';
   this.expression = expression;
+  this.type = type ? type : Empty;
 }
 
 ReturnStatement.prototype.toString = function () {
-  return 'ReturnStatement (' + this.expression.toString() + ')';
+  var typeStr = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
+  return 'ReturnStatement ' + typeStr + '(' + this.expression.toString() + ')';
 };
 
 ReturnStatement.prototype.transformChildren = function (transformer) {
-  return new ReturnStatement(transformer(this.expression));
+  return new ReturnStatement(transformer(this.expression), transformer(this.type));
 };
 
 /**
@@ -219,19 +235,21 @@ VariableDeclaration.prototype.transformChildren = function (transformer) {
 /**
  * A binary operation
  */
-function Op (op, left, right) {
+function Op (op, left, right, type) {
   this.nodeType = 'Op';
   this.op = op;
   this.left = left;
   this.right = right;
+  this.type = type ? type : Empty;
 }
 
 Op.prototype.toString = function () {
-  return 'Op (' + this.op + '\n' + indent(this.left.toString() + '\n' + this.right.toString()) + '\n)';
+  var typeStr = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
+  return 'Op ' + typeStr + '(' + this.op + '\n' + indent(this.left.toString() + '\n' + this.right.toString()) + '\n)';
 };
 
 Op.prototype.transformChildren = function (transformer) {
-  return new Op(this.op, transformer(this.left), transformer(this.right));
+  return new Op(this.op, transformer(this.left), transformer(this.right), transformer(this.type));
 };
 
 /**
@@ -239,18 +257,21 @@ Op.prototype.transformChildren = function (transformer) {
  */
 function StrConcat (left, right) {
   this.nodeType = 'StrConcat';
+  this.type = new Type('string');
 
   validateItem(left, 'StrConcat');
-  validateItem(right, 'StrConcat');
 
   // Left and Right may be StrContact options too
   if (left.nodeType === 'StrConcat') {
     this.items = left.items;
+  } else if (left.nodeType === 'List') {
+    this.items = left;
   } else {
     this.items = new List([left]);
   }
   // Right is optional - left may simply be a list
   if (right) {
+    validateItem(right, 'StrConcat');
     if (right.nodeType === 'StrConcat') {
       this.items = this.items.concat(right.items);
     } else {
@@ -260,7 +281,7 @@ function StrConcat (left, right) {
 }
 
 StrConcat.prototype.toString = function () {
-  return 'StrConcat(' + this.items.toString() + ')';
+  return 'StrConcat ' + this.type.toString() + ' (' + this.items.toString() + ')';
 };
 
 StrConcat.prototype.transformChildren = function (transformer) {
@@ -292,6 +313,14 @@ function Buffer (variable, length) {
   this.variable = variable;
   this.length = length;
 }
+
+Object.defineProperties(Buffer.prototype, {
+  type: {
+    get: function () {
+      return this.variable.type;
+    }
+  }
+});
 
 Buffer.prototype.toString = function () {
   return 'Buffer ' + this.length + ' (' + this.variable.toString() + ')';
@@ -337,7 +366,7 @@ function Type (type) {
 }
 
 Type.prototype.toString = function () {
-  return 'Type (' + this.type + ')';
+  return '[Type ' + this.type + ']';
 };
 
 Type.prototype.transformChildren = function () {
@@ -354,6 +383,11 @@ Type.prototype.transformChildren = function () {
  *  - map { start, end } for type range
  */
 function Literal (value, type) {
+  // Types should always be stored as Dys.Type objects
+  if (typeof type === 'string') {
+    type = new Type(type);
+  }
+
   this.nodeType = 'Literal';
   this.type = type;
   this.value = value;
@@ -361,9 +395,7 @@ function Literal (value, type) {
 
 Literal.prototype.toString = function () {
   var val;
-  switch (this.type) {
-    case 'string':
-      val = '"' + this.value + '"'; break;
+  switch (this.type.type) {
     case 'range':
       val = '\n' + indent(this.value.start + '\n' + this.value.end) + '\n'; break;
     default:
@@ -374,20 +406,6 @@ Literal.prototype.toString = function () {
 
 Literal.prototype.transformChildren = function () {
   return this;
-};
-
-/**
- * A null value
- * We use this singleton to represent unset parameters for type consistency
- */
-var Empty = {
-  nodeType: 'Empty',
-  toString: function () {
-    return 'Empty';
-  },
-  transformChildren: function () {
-    return Empty;
-  }
 };
 
 module.exports = {

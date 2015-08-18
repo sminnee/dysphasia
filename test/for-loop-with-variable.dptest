@@ -33,31 +33,31 @@ define i32 @main() {
 ------
 File ([
   UseStatement puts ([
-    Type (string)
+    [Type string]
   ])
   UseStatement snprintf var_args ([
-    Type (buffer)
-    Type (int)
-    Type (string)
+    [Type buffer]
+    [Type int]
+    [Type string]
   ])
   FnDef main ([
-    VariableDeclaration (Type (int), Variable (x))
+    VariableDeclaration ([Type int], Variable (x))
     ForLoop (
     variable:
       Variable (x)
     loopSource:
-      Literal range (
-        Literal int (1)
-        Literal int (5)
+      Literal [Type range] (
+        Literal [Type int] (1)
+        Literal [Type int] (5)
       )
     statements: [
       FnCall (puts [
-        StrConcat([
+        StrConcat [Type string] ([
           Variable (x)
-          Literal string ("...")
+          Literal [Type string] (...)
         ])
       ])
     ])
-    ReturnStatement (Literal int (0))
+    ReturnStatement (Literal [Type int] (0))
   ])
 ])

@@ -24,24 +24,24 @@ define i32 @main() {
 ------
 File ([
   UseStatement puts ([
-    Type (string)
+    [Type string]
   ])
   UseStatement printf var_args ([
-    Type (string)
+    [Type string]
   ])
   UseStatement snprintf var_args ([
-    Type (buffer)
-    Type (int)
-    Type (string)
+    [Type buffer]
+    [Type int]
+    [Type string]
   ])
   FnDef main ([
     FnCall (puts [
-      Literal string ("hello world")
+      Literal [Type string] (hello world)
     ])
     FnCall (printf [
-      Literal string ("I can see %i things")
-      Literal int (5)
+      Literal [Type string] (I can see %i things)
+      Literal [Type int] (5)
     ])
-    ReturnStatement (Literal int (0))
+    ReturnStatement (Literal [Type int] (0))
   ])
 ])

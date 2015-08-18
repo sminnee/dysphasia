@@ -4,7 +4,6 @@
  */
 
 var ASTBuilder = require('./ASTBuilder');
-var Dys = require('./DysAST');
 
 /**
  * LLVM IR generator
@@ -12,7 +11,6 @@ var Dys = require('./DysAST');
 function LLVMCompiler () {
   this.builder = new ASTBuilder();
   this.fnDefs = {};
-  this.varDefs = {};
 }
 
 LLVMCompiler.prototype.generateLLVMCode = function (ast) {
@@ -47,13 +45,6 @@ LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef) {
   }).join(', ');
   if (fnDef.varArgs) argSpec += ', ...';
   return argSpec;
-};
-
-LLVMCompiler.prototype.declareVariable = function (name, type) {
-  this.varDefs[name] = type;
-};
-LLVMCompiler.prototype.getVariable = function (name) {
-  return this.varDefs[name];
 };
 
 // --------------------------------------------------------------------------- //
@@ -167,7 +158,7 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
   // TODO: Better empty check
   if (ast.variable.nodeType !== 'Empty') {
     if (ast.variable.type.nodeType === 'Empty') {
-      ast.variable.type = this.getVariable(ast.variable.name);
+      throw new SyntaxError("Can't  determine type of " + ast.variable.toString());
     }
     iterator = this.handle(ast.variable);
   } else {
@@ -234,7 +225,7 @@ LLVMCompiler.prototype.handleFnCall = function (ast) {
       if (expectedType === 'i8*' && arg.type.match(/^\[[0-9]+ x i8\]/)) {
         return arg.addExpression('i8*', 'getelementptr ' + arg.type + '* ' + arg.value + ', i64 0, i64 0');
       } else {
-        throw new SyntaxError('Can\'t cast "' + arg.type + ' to "' + expectedType + '" (arg ' +
+        throw new SyntaxError('Can\'t cast "' + arg.type.toString() + ' to "' + expectedType + '" (arg ' +
           (i + 1) + ' of ' + ast.name + ')');
       }
     } else {
@@ -260,14 +251,6 @@ LLVMCompiler.prototype.handleReturnStatement = function (ast) {
 };
 
 /**
- * Return statement
- */
-LLVMCompiler.prototype.handleVariableDeclaration = function (ast) {
-  this.declareVariable(ast.variable.name, ast.type.type);
-  return this.builder.noop();
-};
-
-/**
  * Expression
  */
 LLVMCompiler.prototype.handleOp = function (ast) {
@@ -275,14 +258,23 @@ LLVMCompiler.prototype.handleOp = function (ast) {
     '*': 'mul',
     '+': 'add'
   };
-  return this.builder.combineWithOperator(opMap[ast.op], this.handle(ast.left), this.handle(ast.right));
+
+  return this.builder.combineWithOperator(
+    opMap[ast.op],
+    this.handle(ast.type).type,
+    this.handle(ast.left),
+    this.handle(ast.right)
+  );
 };
 
 /**
  * Represents a buffer that can be loaded by another function call (usually a c-library call)
  */
 LLVMCompiler.prototype.handleVariable = function (ast) {
-  var type = ast.type ? ast.type : this.getVariable(ast.name);
+  if (ast.type.nodeType === 'Empty') {
+    throw new SyntaxError('Variable without types referneced; has the InferTypes transform executed? ' +
+      ast.toString());
+  }
 
   var typeMap = {
     'string': 'i8*',
@@ -293,7 +285,7 @@ LLVMCompiler.prototype.handleVariable = function (ast) {
   // TODO: Check against a local variable registry
   var llName = '%' + ast.name;
 
-  return this.builder.literal(typeMap[type], llName);
+  return this.builder.literal(typeMap[ast.type.type], llName);
 };
 
 /**
@@ -306,8 +298,8 @@ LLVMCompiler.prototype.handleBuffer = function (ast) {
   }
 
   // Buffers only work for strings at the moment
-  if (ast.variable.type !== 'string') {
-    throw new SyntaxError('Can\'t create a Buffer for variable of type ' + ast.type);
+  if (ast.variable.type.type !== 'string') {
+    throw new SyntaxError('Can\'t create a Buffer for variable of type ' + ast.variable.type.toString());
   }
 
   var llVar = this.handle(ast.variable);
@@ -336,7 +328,7 @@ LLVMCompiler.prototype.handleType = function (ast) {
  */
 LLVMCompiler.prototype.handleLiteral = function (ast) {
   var llvm = this;
-  switch (ast.type) {
+  switch (ast.type.type) {
     case 'array':
       return this.builder.literal(
         '*list',

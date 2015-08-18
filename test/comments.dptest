@@ -10,9 +10,9 @@ main {
 ------
 File ([
   UseStatement puts ([
-    Type (string)
+    [Type string]
   ])
   FnDef main ([
-    ReturnStatement (Literal int (0))
+    ReturnStatement (Literal [Type int] (0))
   ])
 ])
