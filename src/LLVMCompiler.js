@@ -26,7 +26,7 @@ LLVMCompiler.prototype.forMethod = function (methodName) {
   var l = new LLVMCompiler();
   l.builder = this.builder;
   l.getFnDef = function (name) { return self.getFnDef(name); };
-  l.argSpecFromFnDef = function (name) { return self.argSpecFromFnDef(name); };
+  l.argSpecFromFnDef = function (fnDef, argCallback) { return self.argSpecFromFnDef(fnDef, argCallback); };
   return l;
 };
 
@@ -37,11 +37,13 @@ LLVMCompiler.prototype.getFnDef = function (name) {
   return this.fnDefs[name];
 };
 
-LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef) {
+LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef, argCallback) {
   var self = this;
 
   var argSpec = fnDef.args.map(function (arg) {
-    return self.handle(arg).type;
+    var type = self.handle(arg).type;
+    if (argCallback) type = argCallback(arg, type);
+    return type;
   }).join(', ');
   if (fnDef.varArgs) argSpec += ', ...';
   return argSpec;
@@ -88,19 +90,13 @@ LLVMCompiler.prototype.handleList = function (ast) {
  * Use statement
  */
 LLVMCompiler.prototype.handleUseStatement = function (ast) {
-  var self = this;
-
   // Log the fnDef for those who call it
   this.fnDefs[ast.name] = ast;
 
-  // More complex argSpec than that given by getArgSpecFromFnDef as it has the 'noalias nocapture' flags
-  var argList = ast.args.map(function (arg) {
-    var type = self.handle(arg).type;
-    // Pointers have some flags
-    if (type.match(/\*$/)) type += ' noalias nocapture';
-    return type;
-  }).join(', ');
-  if (ast.varArgs) argList += ', ...';
+  // Process args adding flags to pointer type
+  var argList = this.argSpecFromFnDef(ast, function (arg, type) {
+    return (type.match(/\*$/) ? (type + ' noalias nocapture') : type);
+  });
 
   return this.builder.globalDeclare('declare i32 @' + ast.name + '(' + argList + ') nounwind');
 };
@@ -276,16 +272,10 @@ LLVMCompiler.prototype.handleVariable = function (ast) {
       ast.toString());
   }
 
-  var typeMap = {
-    'string': 'i8*',
-    'buffer': 'i8*',
-    'int': 'i32'
-  };
-
   // TODO: Check against a local variable registry
   var llName = '%' + ast.name;
 
-  return this.builder.literal(typeMap[ast.type.type], llName);
+  return this.builder.literal(this.handle(ast.type).type, llName);
 };
 
 /**
@@ -294,7 +284,7 @@ LLVMCompiler.prototype.handleVariable = function (ast) {
 LLVMCompiler.prototype.handleBuffer = function (ast) {
   // Buffers only work on variables
   if (ast.variable.nodeType !== 'Variable') {
-    throw new SyntaxError('A Buffer can only be createad for a Variable');
+    throw new SyntaxError('A Buffer can only be created for a Variable');
   }
 
   // Buffers only work for strings at the moment
@@ -317,7 +307,7 @@ LLVMCompiler.prototype.handleType = function (ast) {
   };
 
   if (!typeMap[ast.type]) {
-    throw new SyntaxError('Unrecognised type "' + ast.type + '"');
+    throw new SyntaxError('Unrecognised type "' + ast.toString() + '"');
   }
 
   return this.builder.literal(typeMap[ast.type], null);

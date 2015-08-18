@@ -13,8 +13,6 @@ function StrConcatToCLibrary () {
 util.inherits(StrConcatToCLibrary, ASTTransform);
 
 StrConcatToCLibrary.prototype.handleStrConcat = function (ast) {
-  var self = this;
-
   // TO DO: strConcat will need to be checked for uniqueness against a local variable registrys
   var buffer = new Dys.Buffer(new Dys.Variable('strConcat', new Dys.Type('string')), 100);
 
