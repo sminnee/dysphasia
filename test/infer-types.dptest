@@ -1,0 +1,37 @@
+main {
+  int x;
+  for(x in 1..5) {
+    puts("counting " + x);
+  };
+  return 3 + 4 * 2;
+}
+------
+
+------
+File ([
+  FnDef main ([
+    ForLoop (
+    variable:
+      Variable [Type int] (x)
+    loopSource:
+      Literal [Type range] (
+        Literal [Type int] (1)
+        Literal [Type int] (5)
+      )
+    statements: [
+      FnCall (puts [
+        StrConcat [Type string] ([
+          Literal [Type string] (counting )
+          Variable [Type int] (x)
+        ])
+      ])
+    ])
+    ReturnStatement [Type int] (Op [Type int] (+
+      Literal [Type int] (3)
+      Op [Type int] (*
+        Literal [Type int] (4)
+        Literal [Type int] (2)
+      )
+    ))
+  ])
+])
