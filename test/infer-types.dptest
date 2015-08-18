@@ -9,7 +9,9 @@ main {
 
 ------
 File ([
-  FnDef main ([
+  FnDef main (
+  args: Empty
+  statements: [
     ForLoop (
     variable:
       Variable [Type int] (x)

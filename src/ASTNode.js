@@ -101,9 +101,10 @@ ASTNode.prototype.labelBlockEnd = function (label) {
 /**
  * Turn the expressions into the body of a function
  */
-ASTNode.prototype.defineFunction = function (name) {
+ASTNode.prototype.defineFunction = function (name, args) {
+  if (!args) args = '';
   return new ASTNode(this.builder, {
-    globalCode: this.options.globalCode + 'define i32 @' + name + '() {\n' + indent(this.options.code) + '}\n'
+    globalCode: this.options.globalCode + 'define i32 @' + name + '(' + args + ') {\n' + indent(this.options.code) + '}\n'
   });
 };
 

@@ -119,18 +119,21 @@ UseStatement.prototype.transformChildren = function (transformer) {
 /**
  * A function definition
  */
-function FnDef (name, statements) {
+function FnDef (name, args, statements) {
   this.nodeType = 'FnDef';
   this.name = name;
+  this.args = args;
   this.statements = statements;
 }
 
 FnDef.prototype.toString = function () {
-  return 'FnDef ' + this.name + ' (' + this.statements.toString() + ')';
+  return 'FnDef ' + this.name + ' (' +
+    '\nargs: ' + this.args.toString() +
+    '\nstatements: ' + this.statements.toString() + ')';
 };
 
 FnDef.prototype.transformChildren = function (transformer) {
-  return new FnDef(this.name, transformer(this.statements));
+  return new FnDef(this.name, transformer(this.args), transformer(this.statements));
 };
 
 /**

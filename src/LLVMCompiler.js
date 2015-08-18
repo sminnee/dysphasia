@@ -8,9 +8,9 @@ var ASTBuilder = require('./ASTBuilder');
 /**
  * LLVM IR generator
  */
-function LLVMCompiler () {
+function LLVMCompiler (fnDefs) {
   this.builder = new ASTBuilder();
-  this.fnDefs = {};
+  this.fnDefs = fnDefs;
 }
 
 LLVMCompiler.prototype.generateLLVMCode = function (ast) {
@@ -39,6 +39,8 @@ LLVMCompiler.prototype.getFnDef = function (name) {
 
 LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef, argCallback) {
   var self = this;
+
+  if (fnDef.args.nodeType === 'Empty') return '';
 
   var argSpec = fnDef.args.map(function (arg) {
     var type = self.handle(arg).type;
@@ -105,7 +107,12 @@ LLVMCompiler.prototype.handleUseStatement = function (ast) {
  * Single function definition
  */
 LLVMCompiler.prototype.handleFnDef = function (ast) {
-  return this.forMethod(ast.name).handle(ast.statements).defineFunction(ast.name);
+  return this.forMethod(ast.name).handle(ast.statements).defineFunction(
+    ast.name,
+    this.argSpecFromFnDef(ast, function (arg, type) {
+      return type + ' %' + arg.name;
+    })
+  );
 };
 
 /**

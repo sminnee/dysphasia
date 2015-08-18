@@ -16,13 +16,36 @@ start
     }
 
 item
-  = block
+  = fnDef
   / useStatement
 
-block "block"
-  = name:symbolname ws? "{" content:blockcontent "}" ws?
+fnDef "function definition"
+  = name:symbolname ws? args:fnArgDef? "{" content:blockcontent "}" ws?
     {
-      return new Dys.FnDef(name, new Dys.List(content));
+      return new Dys.FnDef(name, args ? new Dys.List(args) : Dys.Empty, new Dys.List(content));
+    }
+
+fnArgDef
+  = "(" ws? args:fnArgDefList ws? ")" ws?
+    {
+      return args;
+    }
+
+fnArgDefList
+  = left:fnSingleArgDef ws? "," ws? rest:fnArgDefList
+    {
+      return [left].concat(rest);
+    }
+  / arg:fnSingleArgDef
+    {
+      return [arg]
+    }
+
+fnSingleArgDef
+  = type:(type ws)? variable:variable
+    {
+      variable.type = type[0];
+      return variable;
     }
 
 blockcontent
@@ -97,7 +120,7 @@ primary
 /**
  * FunctionCall
  */
-functionCall 
+functionCall
   = name:symbolname ws? "(" ws? arguments:functionArguments? ws? ")"
     {
       return new Dys.FnCall(name, arguments ? new Dys.List(arguments) : Dys.Empty);
@@ -111,8 +134,8 @@ functionArguments
 
 extraFunctionArguments
   = ws? "," ws? argument:expression rest:extraFunctionArguments?
-    { 
-      return rest ? [argument].concat(rest) : [argument]; 
+    {
+      return rest ? [argument].concat(rest) : [argument];
     }
 
 /**

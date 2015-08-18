@@ -4,33 +4,42 @@ use snprintf(buffer, int, string, ...);
 main {
   int x;
   for(x in 1..5) {
-    puts(x + "...");
+    displayNumber(x);
   };
   return 0;
 }
 
-------
+displayNumber(int x) {
+  puts(x + "...");
+  return 0;
+}
+
+-------
 declare i32 @puts(i8* noalias nocapture) nounwind
 declare i32 @snprintf(i8* noalias nocapture, i32, i8* noalias nocapture, ...) nounwind
-@str = private unnamed_addr constant [6 x i8] c"%i...\00"
 define i32 @main() {
   br label %Entry
   Entry:
     br label %Loop
   Loop:
     %x = phi i32 [ 1, %Entry ], [ %nextvar, %Loop ]
-  %strConcat = alloca i8, i32 100
-  %var = getelementptr [6 x i8]* @str, i64 0, i64 0
-  %var2 = call i32 (i8*, i32, i8*, ...)* @snprintf(i8* %strConcat, i32 100, i8* %var, i32 %x)
-  %var3 = call i32 (i8*)* @puts(i8* %strConcat)
+  %var = call i32 (i32)* @displayNumber(i32 %x)
   %nextvar = add i32 %x, 1
   %break = icmp ugt i32 %nextvar, 5
   br i1 %break, label %Continue, label %Loop
   Continue:
   ret i32 0
 }
+@str = private unnamed_addr constant [6 x i8] c"%i...\00"
+define i32 @displayNumber(i32 %x) {
+  %strConcat = alloca i8, i32 100
+  %var2 = getelementptr [6 x i8]* @str, i64 0, i64 0
+  %var3 = call i32 (i8*, i32, i8*, ...)* @snprintf(i8* %strConcat, i32 100, i8* %var2, i32 %x)
+  %var4 = call i32 (i8*)* @puts(i8* %strConcat)
+  ret i32 0
+}
 
-------
+-------
 File ([
   UseStatement puts ([
     [Type string]
@@ -53,11 +62,21 @@ File ([
         Literal [Type int] (5)
       )
     statements: [
-      FnCall (puts [
-        StrConcat [Type string] ([
-          Variable (x)
-          Literal [Type string] (...)
-        ])
+      FnCall (displayNumber [
+        Variable (x)
+      ])
+    ])
+    ReturnStatement (Literal [Type int] (0))
+  ])
+  FnDef displayNumber (
+  args: [
+    Variable [Type int] (x)
+  ]
+  statements: [
+    FnCall (puts [
+      StrConcat [Type string] ([
+        Variable (x)
+        Literal [Type string] (...)
       ])
     ])
     ReturnStatement (Literal [Type int] (0))

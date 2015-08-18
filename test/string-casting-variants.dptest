@@ -7,7 +7,9 @@ main {
 
 ------
 File ([
-  FnDef main ([
+  FnDef main (
+  args: Empty
+  statements: [
     StrConcat [Type string] ([
       Literal [Type string] (I've called this )
       Literal [Type int] (5)

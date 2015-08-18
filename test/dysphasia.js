@@ -35,6 +35,10 @@ describe('Dysphasia', function () {
   it('can infer types', function () {
     testASTTransform('test/infer-types.dptest', new InferTypes());
   });
+  it('allows calls to user-defined functions', function () {
+    testAST('test/call-custom-fn.dptest');
+    testIntermediateCode('test/call-custom-fn.dptest');
+  });
 });
 
 function testAST (filename) {
