@@ -19,8 +19,8 @@ item
   = fnDef
   / useStatement
 
-fnDef "function definition"
-  = type:(type ws)? name:symbolname ws? args:fnArgDef? "{" content:blockcontent "}" ws?
+fnDef
+  = type:(type ws)? name:symbolname ws? args:fnArgDef? lbrace content:blockcontent rbrace ws?
     {
       return new Dys.FnDef(
         name,
@@ -31,13 +31,13 @@ fnDef "function definition"
     }
 
 fnArgDef
-  = "(" ws? args:fnArgDefList ws? ")" ws?
+  = lparenth ws? args:fnArgDefList ws? rparenth ws?
     {
       return args;
     }
 
 fnArgDefList
-  = left:fnSingleArgDef ws? "," ws? rest:fnArgDefList
+  = left:fnSingleArgDef ws? comma ws? rest:fnArgDefList
     {
       return [left].concat(rest);
     }
@@ -59,8 +59,8 @@ blockcontent
       return statements;
     }
 
-statementLine "statement"
-  = statement:statement ws? ";" ws? {
+statementLine
+  = statement:statement ws? semicolon ws? {
     return statement;
   }
 
@@ -72,7 +72,7 @@ statement
   / expression
 
 returnStatement
-  = "return" ws expr:expression
+  = return ws expr:expression
     {
       return new Dys.ReturnStatement(expr);
     }
@@ -83,11 +83,11 @@ expression
   / arithmeticExpression
 
 stringExpression
-  = left:simpleTypeOrVariable ws? "+" ws? rest:stringExpression
+  = left:simpleTypeOrVariable ws? plus ws? rest:stringExpression
     {
       return new Dys.StrConcat(left, rest);
     }
-  / left:string ws? "+" ws? right:simpleTypeOrVariable
+  / left:string ws? plus ws? right:simpleTypeOrVariable
     {
       return new Dys.StrConcat(left, right);
     }
@@ -101,21 +101,21 @@ arithmeticExpression
   = value:additive
 
 additive
-  = left:multiplicative ws? "+" ws? right:additive
+  = left:multiplicative ws? plus ws? right:additive
     {
       return new Dys.Op('+', left, right);
     }
   / multiplicative
 
 multiplicative
-  = left:primary ws? "*" ws? right:multiplicative
+  = left:primary ws? asterisk ws? right:multiplicative
     {
       return new Dys.Op('*', left, right);
     }
   / primary
 
 primary
-  = "(" ws? additive:additive ws? ")"
+  = lparenth ws? additive:additive ws? rparenth
     {
       return additive;
     }
@@ -127,7 +127,7 @@ primary
  * FunctionCall
  */
 functionCall
-  = name:symbolname ws? "(" ws? arguments:functionArguments? ws? ")"
+  = name:symbolname ws? lparenth ws? arguments:functionArguments? ws? rparenth
     {
       return new Dys.FnCall(name, arguments ? new Dys.List(arguments) : Dys.Empty);
     }
@@ -139,7 +139,7 @@ functionArguments
     }
 
 extraFunctionArguments
-  = ws? "," ws? argument:expression rest:extraFunctionArguments?
+  = ws? comma ws? argument:expression rest:extraFunctionArguments?
     {
       return rest ? [argument].concat(rest) : [argument];
     }
@@ -148,13 +148,13 @@ extraFunctionArguments
  * If blocks
  */
 
-ifBlock "if block"
-  = "if" ws? "(" ws? test:expression ws? ")" ws? "{" pass:blockcontent "}" ws? fail:elseBlock?
+ifBlock
+  = if ws? lparenth ws? test:expression ws? rparenth ws? lbrace pass:blockcontent rbrace ws? fail:elseBlock?
     {
       return new Dys.IfBlock(test, new Dys.List(pass), fail ? new Dys.List(fail) : Dys.Empty);
     }
-elseBlock "else block"
-  = "else" ws? "{" fail:blockcontent "}" ws?
+elseBlock
+  = else ws? lbrace fail:blockcontent rbrace ws?
     {
       return fail;
     }
@@ -162,8 +162,8 @@ elseBlock "else block"
 /**
  * For loops
  */
-forLoop "for loop"
-  = "for" ws? "(" ws? loopSource:loopExpression ws? ")" ws? "{" content:blockcontent "}" ws?
+forLoop
+  = for ws? lparenth ws? loopSource:loopExpression ws? rparenth ws? lbrace content:blockcontent rbrace ws?
     { return new Dys.ForLoop(
         loopSource.variable ? loopSource.variable : Dys.Empty,
         loopSource.expression,
@@ -171,8 +171,8 @@ forLoop "for loop"
       );
     }
 
-loopExpression "loop expression"
-  = variable:variable ws "in" ws expression:arrayExpression { return { variable: variable, expression: expression }; }
+loopExpression
+  = variable:variable ws in ws expression:arrayExpression { return { variable: variable, expression: expression }; }
   / expression:arrayExpression { return { variable: null, expression: expression }; }
 
 arrayExpression
@@ -180,14 +180,14 @@ arrayExpression
   / variable
 
 arrayLiteral
-  = start:integer ".." end:integer { return new Dys.Literal({ start: start, end: end }, 'range'); }
-  / "[" ws? first:expression rest:extraArrayItems "]"
+  = start:integer doubledot end:integer { return new Dys.Literal({ start: start, end: end }, 'range'); }
+  / lbracket ws? first:expression rest:extraArrayItems rbracket
     {
       return new Dys.Literal(new Dys.List(rest ? [first].concat(rest) : [first]), 'array')
     }
 
 extraArrayItems
-  = ws? "," ws? next:expression rest:extraFunctionArguments?
+  = ws? comma ws? next:expression rest:extraFunctionArguments?
     {
       return next ? [next].concat(rest) : [next];
     }
@@ -199,8 +199,8 @@ extraArrayItems
 /**
  * Function imports (use)
  */
-useStatement "use statement"
-  = "use" ws type:(type ws)? name:symbolname ws? ";"? ws? "(" ws? args:useStatementParams ws? ")" ws? ";"? ws?
+useStatement
+  = use ws type:(type ws)? name:symbolname ws? semicolon? ws? lparenth ws? args:useStatementParams ws? rparenth ws? semicolon? ws?
     {
       if(args && args.varArgs) {
         return new Dys.UseStatement(name, type ? type[0] : Dys.Empty, args.types, true);
@@ -209,14 +209,14 @@ useStatement "use statement"
       }
     }
 
-useStatementParams "type list"
-  = types:typeList ws? "," ws? "..."
+useStatementParams
+  = types:typeList ws? "," ws? elipsis
     {
       return { varArgs: true, types: types }
     }
   / typeList
 
-typeList "type list"
+typeList
   = left:type ws? "," ws? rest:typeList
     {
       return new Dys.List([left]).concat(rest);
@@ -259,14 +259,14 @@ variableDeclaration
 /**
  * Basic literals
  */
-ws "whitespace"
+ws
   = wschar* { return null; }
 
-wschar "whitespace character or comment"
+wschar
   = [\n\r\t ]+
   / comment
 
-comment "comment"
+comment
   = '//' p:([^\n]*) { return null; }
 
 string "string"
@@ -285,7 +285,7 @@ integerOrVariable
   = integer
   / variable
 
-stringcontent "string content"
+stringcontent
   = "\\\\" { return "\\"; }
   / "\\\"" { return "\""; }
   / "\\n" { return "\n"; }
@@ -299,8 +299,68 @@ integer "integer"
     return new Dys.Literal(parseInt(digits.join(""), 10), 'int');
   }
 
-float "floating point"
+float "float"
   = leftdigits:[0-9]+ "." rightdigits:[0-9]+
   {
     return new Dys.Literal(parseFloat(leftdigits.join("") + "." + rightdigits.join(), 10), 'float');
   }
+
+/**
+ * Reserved symbols / words
+ * Note that we mark these out as their own rules, and put descriptions only on these, as it makes error reporting
+ * much more useful.
+ */
+
+return "return"
+  = "return"
+
+if "if"
+  = "if"
+
+else "else"
+  = "else"
+
+for "for"
+  = "for"
+
+in "in"
+  = "in"
+
+use "use"
+  = "use"
+
+lparenth "("
+  = "("
+
+rparenth ")"
+  = ")"
+
+lbracket "["
+  = "["
+
+rbracket "["
+  = "["
+
+lbrace "{"
+  = "{"
+
+rbrace "}"
+  =  "}"
+
+comma ","
+  =  ","
+semicolon ";"
+  = ";"
+
+doubledot ".."
+  =  ".."
+
+elipsis "..."
+  =  "..."
+
+plus "+"
+  = "+"
+
+asterisk "*"
+  = "*"
+
