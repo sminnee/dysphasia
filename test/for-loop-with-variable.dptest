@@ -53,7 +53,7 @@ File ([
         Literal [Type int] (5)
       )
     statements: [
-      FnCall (puts [
+      FnCall puts ([
         StrConcat [Type string] ([
           Variable (x)
           Literal [Type string] (...)

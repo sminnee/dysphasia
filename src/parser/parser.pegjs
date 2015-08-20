@@ -20,9 +20,14 @@ item
   / useStatement
 
 fnDef "function definition"
-  = name:symbolname ws? args:fnArgDef? "{" content:blockcontent "}" ws?
+  = type:(type ws)? name:symbolname ws? args:fnArgDef? "{" content:blockcontent "}" ws?
     {
-      return new Dys.FnDef(name, args ? new Dys.List(args) : Dys.Empty, new Dys.List(content));
+      return new Dys.FnDef(
+        name,
+        type ? type[0] : Dys.Empty,
+        args ? new Dys.List(args) : Dys.Empty,
+        new Dys.List(content)
+      );
     }
 
 fnArgDef
@@ -114,6 +119,7 @@ primary
     {
       return additive;
     }
+  / functionCall
   / integer
   / variable
 
@@ -194,12 +200,12 @@ extraArrayItems
  * Function imports (use)
  */
 useStatement "use statement"
-  = "use" ws name:symbolname ws? ";"? ws? "(" ws? args:useStatementParams ws? ")" ws? ";"? ws?
+  = "use" ws type:(type ws)? name:symbolname ws? ";"? ws? "(" ws? args:useStatementParams ws? ")" ws? ";"? ws?
     {
       if(args && args.varArgs) {
-        return new Dys.UseStatement(name, args.types, true);
+        return new Dys.UseStatement(name, type ? type[0] : Dys.Empty, args.types, true);
       } else {
-        return new Dys.UseStatement(name, args, false);
+        return new Dys.UseStatement(name, type ? type[0] : Dys.Empty, args, false);
       }
     }
 

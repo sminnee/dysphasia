@@ -15,18 +15,23 @@ util.inherits(GetFnDefs, ASTTransform);
 // TODO: this shouldn't be needed
 GetFnDefs.prototype.handleFile = function (ast) {
   this.defaultHandler(ast);
-
   return this.fnDefs;
 };
 
-GetFnDefs.prototype.handleUse = function (ast) {
-  this.fnDefs[ast.name] = ast;
+GetFnDefs.prototype.handleUseStatement = function (ast) {
+  this.fnDefs[ast.name] = this.defaultHandler(ast);
+  return this.fnDefs[ast.name];
+};
+
+GetFnDefs.prototype.handleReturnStatement = function (ast) {
+  this.returnTypes.push(ast);
   return this.defaultHandler(ast);
 };
 
 GetFnDefs.prototype.handleFnDef = function (ast) {
-  this.fnDefs[ast.name] = ast;
-  return this.defaultHandler(ast);
+  this.returnTypes = [];
+  this.fnDefs[ast.name] = this.defaultHandler(ast);
+  return this.fnDefs[ast.name];
 };
 
 module.exports = GetFnDefs;

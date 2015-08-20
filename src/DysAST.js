@@ -100,40 +100,44 @@ List.prototype.concat = function (extra) {
 /**
  * A 'use' statement for importing external functions
  */
-function UseStatement (name, args, varArgs) {
+function UseStatement (name, type, args, varArgs) {
   this.nodeType = 'UseStatement';
+  this.type = type;
   this.name = name;
   this.args = args;
   this.varArgs = varArgs;
 }
 
 UseStatement.prototype.toString = function () {
-  return 'UseStatement ' + this.name + (this.varArgs ? ' var_args ' : ' ') + '(' +
+  var type = (this.type.nodeType === 'Empty') ? '' : (this.type.toString + ' ');
+  return 'UseStatement ' + type + this.name + (this.varArgs ? ' var_args ' : ' ') + '(' +
     this.args.toString() + ')';
 };
 
 UseStatement.prototype.transformChildren = function (transformer) {
-  return new UseStatement(this.name, transformer(this.args), this.varArgs);
+  return new UseStatement(this.name, transformer(this.type), transformer(this.args), this.varArgs);
 };
 
 /**
  * A function definition
  */
-function FnDef (name, args, statements) {
+function FnDef (name, type, args, statements) {
   this.nodeType = 'FnDef';
   this.name = name;
+  this.type = type;
   this.args = args;
   this.statements = statements;
 }
 
 FnDef.prototype.toString = function () {
-  return 'FnDef ' + this.name + ' (' +
+  var type = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
+  return 'FnDef ' + type + this.name + ' (' +
     '\nargs: ' + this.args.toString() +
     '\nstatements: ' + this.statements.toString() + ')';
 };
 
 FnDef.prototype.transformChildren = function (transformer) {
-  return new FnDef(this.name, transformer(this.args), transformer(this.statements));
+  return new FnDef(this.name, transformer(this.type), transformer(this.args), transformer(this.statements));
 };
 
 /**
@@ -183,10 +187,12 @@ function FnCall (name, args) {
   this.nodeType = 'FnCall';
   this.name = name;
   this.args = args;
+  this.type = Empty;
 }
 
 FnCall.prototype.toString = function () {
-  return 'FnCall (' + this.name + ' ' + this.args.toString() + ')';
+  var type = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
+  return 'FnCall ' + type + this.name + ' (' + this.args.toString() + ')';
 };
 
 FnCall.prototype.transformChildren = function (transformer) {

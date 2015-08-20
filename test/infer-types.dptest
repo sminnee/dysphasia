@@ -1,3 +1,4 @@
+use puts(string);
 main {
   int x;
   for(x in 1..5) {
@@ -9,6 +10,9 @@ main {
 
 ------
 File ([
+  UseStatement puts ([
+    [Type string]
+  ])
   FnDef main (
   args: Empty
   statements: [
@@ -21,7 +25,7 @@ File ([
         Literal [Type int] (5)
       )
     statements: [
-      FnCall (puts [
+      FnCall puts ([
         StrConcat [Type string] ([
           Literal [Type string] (counting )
           Variable [Type int] (x)

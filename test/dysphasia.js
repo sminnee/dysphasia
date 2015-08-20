@@ -4,12 +4,14 @@ var Dysphasia = require('../src/dysphasia');
 var assert = require('assert');
 var fs = require('fs');
 var InferTypes = require('../src/ast-transforms/InferTypes');
+var GetFnDefs = require('../src/ast-transforms/GetFnDefs');
 
 describe('Dysphasia', function () {
   it('supports if statements', function () {
     testIntermediateCode('test/if-else.dptest');
   });
   it('supports basic arithmetic', function () {
+    testASTInferredTypes('test/arithmetic.dptest');
     testIntermediateCode('test/arithmetic.dptest');
   });
   it('supports use and puts', function () {
@@ -33,7 +35,7 @@ describe('Dysphasia', function () {
     testAST('test/string-casting-variants.dptest');
   });
   it('can infer types', function () {
-    testASTTransform('test/infer-types.dptest', new InferTypes());
+    testASTInferredTypes('test/infer-types.dptest');
   });
   it('allows calls to user-defined functions', function () {
     testAST('test/call-custom-fn.dptest');
@@ -47,11 +49,24 @@ function testAST (filename) {
   assert.equal(dp.parseTree().toString(), parts.ast.replace(/\s+$/, ''));
 }
 
+/*
 function testASTTransform (filename, transform) {
   var parts = loadTest(filename);
   var dp = Dysphasia.loadString(parts.source);
   var ast = dp.parseTree();
   ast = transform.handle(ast);
+  assert.equal(ast.toString(), parts.ast.replace(/\s+$/, ''));
+}
+*/
+
+function testASTInferredTypes (filename) {
+  var parts = loadTest(filename);
+  var dp = Dysphasia.loadString(parts.source);
+  var ast = dp.parseTree();
+
+  var fnDefs = (new GetFnDefs()).handle(ast);
+  ast = (new InferTypes(fnDefs)).handle(ast);
+
   assert.equal(ast.toString(), parts.ast.replace(/\s+$/, ''));
 }
 

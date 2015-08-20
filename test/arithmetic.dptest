@@ -1,9 +1,48 @@
 main {
-	return 3 + 4 * 2;
+	return 3 + 4 * 2 + timesTwo(5);
+}
+int timesTwo(int x) {
+    return x * 2;
 }
 ------
 define i32 @main() {
   %var = mul i32 4, 2
-  %var2 = add i32 3, %var
-  ret i32 %var2
+  %var2 = call i32 (i32)* @timesTwo(i32 5)
+  %var3 = add i32 %var, %var2
+  %var4 = add i32 3, %var3
+  ret i32 %var4
 }
+define i32 @timesTwo(i32 %x) {
+  %var5 = mul i32 %x, 2
+  ret i32 %var5
+}
+
+------
+File ([
+  FnDef main (
+  args: Empty
+  statements: [
+    ReturnStatement [Type int] (Op [Type int] (+
+      Literal [Type int] (3)
+      Op [Type int] (+
+        Op [Type int] (*
+          Literal [Type int] (4)
+          Literal [Type int] (2)
+        )
+        FnCall [Type int] timesTwo ([
+          Literal [Type int] (5)
+        ])
+      )
+    ))
+  ])
+  FnDef [Type int] timesTwo (
+  args: [
+    Variable [Type int] (x)
+  ]
+  statements: [
+    ReturnStatement [Type int] (Op [Type int] (*
+      Variable [Type int] (x)
+      Literal [Type int] (2)
+    ))
+  ])
+])

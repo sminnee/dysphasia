@@ -62,7 +62,7 @@ File ([
         Literal [Type int] (5)
       )
     statements: [
-      FnCall (displayNumber [
+      FnCall displayNumber ([
         Variable (x)
       ])
     ])
@@ -73,7 +73,7 @@ File ([
     Variable [Type int] (x)
   ]
   statements: [
-    FnCall (puts [
+    FnCall puts ([
       StrConcat [Type string] ([
         Variable (x)
         Literal [Type string] (...)

@@ -37,10 +37,10 @@ File ([
   FnDef main (
   args: Empty
   statements: [
-    FnCall (puts [
+    FnCall puts ([
       Literal [Type string] (hello world)
     ])
-    FnCall (printf [
+    FnCall printf ([
       Literal [Type string] (I can see %i things)
       Literal [Type int] (5)
     ])

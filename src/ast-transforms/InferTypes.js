@@ -5,9 +5,10 @@ var Dys = require('../DysAST');
 /**
  * Infer the types of vall variables and expressions that don't have types listed
  */
-function InferTypes () {
+function InferTypes (fnDefs) {
   ASTTransform.call(this);
   this.varDefs = {};
+  this.fnDefs = fnDefs;
 }
 
 util.inherits(InferTypes, ASTTransform);
@@ -29,6 +30,27 @@ InferTypes.prototype.handleOp = function (ast) {
     throw new SyntaxError("Types don't match in " . result.toString());
   }
 
+  return result;
+};
+
+InferTypes.prototype.handleFnDef = function (ast) {
+  var self = this;
+  // TODO: Limit scope only to the function
+  if (ast.args.nodeType === 'List') {
+    ast.args.forEach(function (arg) {
+      self.varDefs[arg.name] = arg.type;
+    });
+  }
+  return this.defaultHandler(ast);
+};
+
+InferTypes.prototype.handleFnCall = function (ast) {
+  var result = this.defaultHandler(ast);
+  if (this.fnDefs[result.name]) {
+    result.type = this.fnDefs[result.name].type;
+  } else {
+    throw new SyntaxError("Can't find definition of function " + result.name);
+  }
   return result;
 };
 
