@@ -14,6 +14,10 @@ describe('Dysphasia', function () {
     testASTInferredTypes('test/arithmetic.dptest');
     testIntermediateCode('test/arithmetic.dptest');
   });
+  it('supports comparison operator', function () {
+    testAST('test/comparison.dptest');
+    testIntermediateCode('test/comparison.dptest');
+  });
   it('supports use and puts', function () {
     testAST('test/use-puts.dptest');
     testIntermediateCode('test/use-puts.dptest');

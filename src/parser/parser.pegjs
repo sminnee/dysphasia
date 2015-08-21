@@ -94,34 +94,72 @@ stringExpression
   / string
 
 /**
- * Statements can be arithmetic
- * With no variables, arithmetic expressions are compiled to their results
+ * Expressions are parsed with the following predecence
+ * - boolean
+ * - comparison
+ * - multiplicative
+ * - additive
+ * - parentheses
  */
 arithmeticExpression
-  = value:additive
+  = boolean
+
+boolean
+  = left:comparison ws? op:boolOp ws? right:boolean
+    {
+      return new Dys.Op(op, left, right, new Dys.Type('bool'));
+    }
+  / comparison
+
+comparison
+  = left:additive ws? op:cmpOp ws? right:comparison
+    {
+      return new Dys.Op(op, left, right, new Dys.Type('bool'));
+    }
+  / additive
 
 additive
-  = left:multiplicative ws? plus ws? right:additive
+  = left:multiplicative ws? op:addOp ws? right:additive
     {
-      return new Dys.Op('+', left, right);
+      return new Dys.Op(op, left, right);
     }
   / multiplicative
 
 multiplicative
-  = left:primary ws? asterisk ws? right:multiplicative
+  = left:primary ws? op:mulOp ws? right:multiplicative
     {
-      return new Dys.Op('*', left, right);
+      return new Dys.Op(op, left, right);
     }
   / primary
 
 primary
-  = lparenth ws? additive:additive ws? rparenth
+  = lparenth ws? subExpr:comparison ws? rparenth
     {
-      return additive;
+      return subExpr;
     }
   / functionCall
   / integer
+  / bool
   / variable
+
+cmpOp
+  = eq
+  / ne
+  / gte
+  / lte
+  / gt
+  / lt
+
+boolOp
+  = and
+  / or
+addOp
+  = plus
+  / minus
+mulOp
+  = asterisk
+  / slash
+
 
 /**
  * FunctionCall
@@ -305,6 +343,12 @@ float "float"
     return new Dys.Literal(parseFloat(leftdigits.join("") + "." + rightdigits.join(), 10), 'float');
   }
 
+bool "boolean"
+  = value:("true" / "false")
+  {
+    return new Dys.Literal(value, 'bool');
+  }
+
 /**
  * Reserved symbols / words
  * Note that we mark these out as their own rules, and put descriptions only on these, as it makes error reporting
@@ -360,7 +404,27 @@ elipsis "..."
 
 plus "+"
   = "+"
-
+minus "-"
+  = "-"
 asterisk "*"
   = "*"
+slash "/"
+  = "/"
 
+lt "<"
+  = "<"
+lte "<="
+  = "<="
+gt "<"
+  = ">"
+gte ">="
+  = ">="
+eq "=="
+  = "=="
+ne "!="
+  =  "!="
+
+and "&&"
+  =  "&&"
+or "||"
+  =  "||"

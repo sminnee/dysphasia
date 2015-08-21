@@ -1,0 +1,127 @@
+main {
+  if(1 >= 2) {
+    return 1;
+  };
+  if(1 <= 2 && false) {
+    return 2;
+  };
+  if(1 < 2 || 3 != 4) {
+    return 3;
+  };
+  if(5 + 3 * 2 > 8) {
+    return 4;
+  };
+  if(true) {
+    return 5;
+  };
+  return 6;
+}
+------
+define i32 @main() {
+  %var = icmp sge i1 1, 2
+  br i1 %var, label %IfTrue, label %Continue
+  IfTrue:
+    ret i32 1
+    br label %Continue
+  Continue:
+  %var2 = icmp sle i1 1, 2
+  %var3 = and i1 %var2, false
+  br i1 %var3, label %IfTrue2, label %Continue2
+  IfTrue2:
+    ret i32 2
+    br label %Continue2
+  Continue2:
+  %var4 = icmp slt i1 1, 2
+  %var5 = icmp ne i1 3, 4
+  %var6 = or i1 %var4, %var5
+  br i1 %var6, label %IfTrue3, label %Continue3
+  IfTrue3:
+    ret i32 3
+    br label %Continue3
+  Continue3:
+  %var7 = mul i32 3, 2
+  %var8 = add i32 5, %var7
+  %var9 = icmp sgt i1 %var8, 8
+  br i1 %var9, label %IfTrue4, label %Continue4
+  IfTrue4:
+    ret i32 4
+    br label %Continue4
+  Continue4:
+  br i1 true, label %IfTrue5, label %Continue5
+  IfTrue5:
+    ret i32 5
+    br label %Continue5
+  Continue5:
+  ret i32 6
+}
+
+------
+File ([
+  FnDef main (
+  args: Empty
+  statements: [
+    IfBlock (
+    test:
+      Op [Type bool] (>=
+        Literal [Type int] (1)
+        Literal [Type int] (2)
+      )
+    pass: [
+      ReturnStatement (Literal [Type int] (1))
+    ]
+    fail: Empty)
+    IfBlock (
+    test:
+      Op [Type bool] (&&
+        Op [Type bool] (<=
+          Literal [Type int] (1)
+          Literal [Type int] (2)
+        )
+        Literal [Type bool] (false)
+      )
+    pass: [
+      ReturnStatement (Literal [Type int] (2))
+    ]
+    fail: Empty)
+    IfBlock (
+    test:
+      Op [Type bool] (||
+        Op [Type bool] (<
+          Literal [Type int] (1)
+          Literal [Type int] (2)
+        )
+        Op [Type bool] (!=
+          Literal [Type int] (3)
+          Literal [Type int] (4)
+        )
+      )
+    pass: [
+      ReturnStatement (Literal [Type int] (3))
+    ]
+    fail: Empty)
+    IfBlock (
+    test:
+      Op [Type bool] (>
+        Op (+
+          Literal [Type int] (5)
+          Op (*
+            Literal [Type int] (3)
+            Literal [Type int] (2)
+          )
+        )
+        Literal [Type int] (8)
+      )
+    pass: [
+      ReturnStatement (Literal [Type int] (4))
+    ]
+    fail: Empty)
+    IfBlock (
+    test:
+      Literal [Type bool] (true)
+    pass: [
+      ReturnStatement (Literal [Type int] (5))
+    ]
+    fail: Empty)
+    ReturnStatement (Literal [Type int] (6))
+  ])
+])

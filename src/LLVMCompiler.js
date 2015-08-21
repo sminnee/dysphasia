@@ -259,7 +259,19 @@ LLVMCompiler.prototype.handleReturnStatement = function (ast) {
 LLVMCompiler.prototype.handleOp = function (ast) {
   var opMap = {
     '*': 'mul',
-    '+': 'add'
+    '/': 'div',
+    '+': 'add',
+    '-': 'sub',
+
+    '==': 'icmp eq',
+    '!=': 'icmp ne',
+    '<': 'icmp slt',
+    '>': 'icmp sgt',
+    '<=': 'icmp sle',
+    '>=': 'icmp sge',
+
+    '&&': 'and',
+    '||': 'or'
   };
 
   return this.builder.combineWithOperator(
@@ -310,7 +322,8 @@ LLVMCompiler.prototype.handleType = function (ast) {
   var typeMap = {
     'string': 'i8*',
     'buffer': 'i8*',
-    'int': 'i32'
+    'int': 'i32',
+    'bool': 'i1'
   };
 
   if (!typeMap[ast.type]) {
@@ -351,6 +364,9 @@ LLVMCompiler.prototype.handleLiteral = function (ast) {
 
     case 'int':
       return this.builder.literal('i32', ast.value);
+
+    case 'bool':
+      return this.builder.literal('i1', ast.value);
 
     default:
       throw new SyntaxError('Bad type in AST: "' + ast.type + '"');

@@ -24,10 +24,14 @@ InferTypes.prototype.getVariable = function (name) {
 
 InferTypes.prototype.handleOp = function (ast) {
   var result = this.defaultHandler(ast);
+
+  // Some operators come with a pre-defined type, e.g. comparisons are always boolean
+  if (result.type.nodeType !== 'Empty') return result;
+
   if (result.left.type.type === result.right.type.type) {
     result.type = result.left.type;
   } else {
-    throw new SyntaxError("Types don't match in " . result.toString());
+    throw new SyntaxError("Types don't match in " + result.toString());
   }
 
   return result;
