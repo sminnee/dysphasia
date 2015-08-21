@@ -20,7 +20,7 @@ item
   / useStatement
 
 fnDef
-  = type:(type ws)? name:symbolname ws? args:fnArgDef? lbrace content:blockcontent rbrace ws?
+  = type:(type ws)? name:symbolname args:fnArgDef? lbrace content:blockcontent rbrace
     {
       return new Dys.FnDef(
         name,
@@ -31,13 +31,13 @@ fnDef
     }
 
 fnArgDef
-  = lparenth ws? args:fnArgDefList ws? rparenth ws?
+  = lparenth args:fnArgDefList rparenth
     {
       return args;
     }
 
 fnArgDefList
-  = left:fnSingleArgDef ws? comma ws? rest:fnArgDefList
+  = left:fnSingleArgDef comma rest:fnArgDefList
     {
       return [left].concat(rest);
     }
@@ -54,13 +54,13 @@ fnSingleArgDef
     }
 
 blockcontent
-  = ws? statements:(statementLine)*
+  = statements:(statementLine)*
     {
       return statements;
     }
 
 statementLine
-  = statement:statement ws? semicolon ws? {
+  = statement:statement semicolon {
     return statement;
   }
 
@@ -82,11 +82,11 @@ expression
   / arithmeticExpression
 
 stringExpression
-  = left:simpleTypeOrVariable ws? plus ws? rest:stringExpression
+  = left:simpleTypeOrVariable plus rest:stringExpression
     {
       return new Dys.StrConcat(left, rest);
     }
-  / left:string ws? plus ws? right:simpleTypeOrVariable
+  / left:string plus right:simpleTypeOrVariable
     {
       return new Dys.StrConcat(left, right);
     }
@@ -104,35 +104,35 @@ arithmeticExpression
   = boolean
 
 boolean
-  = left:comparison ws? op:boolOp ws? right:boolean
+  = left:comparison op:boolOp right:boolean
     {
       return new Dys.Op(op, left, right, new Dys.Type('bool'));
     }
   / comparison
 
 comparison
-  = left:additive ws? op:cmpOp ws? right:comparison
+  = left:additive op:cmpOp right:comparison
     {
       return new Dys.Op(op, left, right, new Dys.Type('bool'));
     }
   / additive
 
 additive
-  = left:multiplicative ws? op:addOp ws? right:additive
+  = left:multiplicative op:addOp right:additive
     {
       return new Dys.Op(op, left, right);
     }
   / multiplicative
 
 multiplicative
-  = left:primary ws? op:mulOp ws? right:multiplicative
+  = left:primary op:mulOp right:multiplicative
     {
       return new Dys.Op(op, left, right);
     }
   / primary
 
 primary
-  = lparenth ws? subExpr:comparison ws? rparenth
+  = lparenth subExpr:comparison rparenth
     {
       return subExpr;
     }
@@ -164,7 +164,7 @@ mulOp
  * FunctionCall
  */
 functionCall
-  = name:symbolname ws? lparenth ws? arguments:functionArguments? ws? rparenth
+  = name:symbolname lparenth arguments:functionArguments? rparenth
     {
       return new Dys.FnCall(name, arguments ? new Dys.List(arguments) : Dys.Empty);
     }
@@ -176,7 +176,7 @@ functionArguments
     }
 
 extraFunctionArguments
-  = ws? comma ws? argument:expression rest:extraFunctionArguments?
+  = comma argument:expression rest:extraFunctionArguments?
     {
       return rest ? [argument].concat(rest) : [argument];
     }
@@ -186,12 +186,12 @@ extraFunctionArguments
  */
 
 ifBlock
-  = if ws? lparenth ws? test:expression ws? rparenth ws? lbrace pass:blockcontent rbrace ws? fail:elseBlock?
+  = if lparenth test:expression rparenth lbrace pass:blockcontent rbrace fail:elseBlock?
     {
       return new Dys.IfBlock(test, new Dys.List(pass), fail ? new Dys.List(fail) : Dys.Empty);
     }
 elseBlock
-  = else ws? lbrace fail:blockcontent rbrace ws?
+  = else lbrace fail:blockcontent rbrace
     {
       return fail;
     }
@@ -200,7 +200,7 @@ elseBlock
  * For loops
  */
 forLoop
-  = for ws? lparenth ws? loopSource:loopExpression ws? rparenth ws? lbrace content:blockcontent rbrace ws?
+  = for lparenth loopSource:loopExpression rparenth lbrace content:blockcontent rbrace
     { return new Dys.ForLoop(
         loopSource.variable ? loopSource.variable : Dys.Empty,
         loopSource.expression,
@@ -218,13 +218,13 @@ arrayExpression
 
 arrayLiteral
   = start:integer doubledot end:integer { return new Dys.Literal({ start: start, end: end }, 'range'); }
-  / lbracket ws? first:expression rest:extraArrayItems rbracket
+  / lbracket first:expression rest:extraArrayItems rbracket
     {
       return new Dys.Literal(new Dys.List(rest ? [first].concat(rest) : [first]), 'array')
     }
 
 extraArrayItems
-  = ws? comma ws? next:expression rest:extraFunctionArguments?
+  = comma next:expression rest:extraFunctionArguments?
     {
       return next ? [next].concat(rest) : [next];
     }
@@ -237,7 +237,7 @@ extraArrayItems
  * Function imports (use)
  */
 useStatement
-  = use ws type:(type ws)? name:symbolname ws? semicolon? ws? lparenth ws? args:useStatementParams ws? rparenth ws? semicolon? ws?
+  = use ws type:(type ws)? name:symbolname semicolon? lparenth args:useStatementParams rparenth semicolon?
     {
       if(args && args.varArgs) {
         return new Dys.UseStatement(name, type ? type[0] : Dys.Empty, args.types, true);
@@ -247,14 +247,14 @@ useStatement
     }
 
 useStatementParams
-  = types:typeList ws? "," ws? elipsis
+  = types:typeList comma elipsis
     {
       return { varArgs: true, types: types }
     }
   / typeList
 
 typeList
-  = left:type ws? "," ws? rest:typeList
+  = left:type comma rest:typeList
     {
       return new Dys.List([left]).concat(rest);
     }
@@ -268,7 +268,7 @@ type "type"
   / "buffer"
   / "int"
   / "float"
-  / "bool")
+  / "bool") ws?
     {
       return new Dys.Type(type)
     }
@@ -283,7 +283,7 @@ variable "variable"
  * Function name, etc
  */
 symbolname "symbol name"
-  = lchar:[A-Za-z] rchars:[A-Za-z0-9_]*
+  = lchar:[A-Za-z] rchars:[A-Za-z0-9_]* ws?
     {
       return lchar + rchars.join("");
     }
@@ -292,24 +292,6 @@ variableDeclaration
   = type:type ws name:variable
     {
       return new Dys.VariableDeclaration(name, type);
-    }
-/**
- * Basic literals
- */
-ws
-  = wschar* { return null; }
-
-wschar
-  = [\n\r\t ]+
-  / comment
-
-comment
-  = '//' p:([^\n]*) { return null; }
-
-string "string"
-  = "\"" contents:stringcontent* "\""
-    {
-      return new Dys.Literal(contents.join(""), 'string');
     }
 
 simpleTypeOrVariable
@@ -322,6 +304,11 @@ integerOrVariable
   = integer
   / variable
 
+string "string"
+  = "\"" contents:stringcontent* "\"" ws?
+    {
+      return new Dys.Literal(contents.join(""), 'string');
+    }
 stringcontent
   = "\\\\" { return "\\"; }
   / "\\\"" { return "\""; }
@@ -331,19 +318,19 @@ stringcontent
   / contents:[^\\"]+ {return contents.join(""); }
 
 integer "integer"
-  = digits:[0-9]+
+  = digits:[0-9]+ ws?
   {
     return new Dys.Literal(parseInt(digits.join(""), 10), 'int');
   }
 
 float "float"
-  = leftdigits:[0-9]+ "." rightdigits:[0-9]+
+  = leftdigits:[0-9]+ "." rightdigits:[0-9]+ ws?
   {
     return new Dys.Literal(parseFloat(leftdigits.join("") + "." + rightdigits.join(), 10), 'float');
   }
 
 bool "boolean"
-  = value:("true" / "false")
+  = value:("true" / "false") ws?
   {
     return new Dys.Literal(value, 'bool');
   }
@@ -355,75 +342,88 @@ bool "boolean"
  */
 
 return "return"
-  = "return"
+  = val:"return" ws? { return val; }
 
 if "if"
-  = "if"
+  = val:"if" ws? { return val; }
 
 else "else"
-  = "else"
+  = val:"else" ws? { return val; }
 
 for "for"
-  = "for"
+  = val:"for" ws? { return val; }
 
 in "in"
-  = "in"
+  = val:"in" ws? { return val; }
 
 use "use"
-  = "use"
+  = val:"use" ws? { return val; }
 
 lparenth "("
-  = "("
+  = val:"(" ws? { return val; }
 
 rparenth ")"
-  = ")"
+  = val:")" ws? { return val; }
 
 lbracket "["
-  = "["
+  = val:"[" ws? { return val; }
 
 rbracket "["
-  = "["
+  = val:"[" ws? { return val; }
 
 lbrace "{"
-  = "{"
+  = val:"{" ws? { return val; }
 
 rbrace "}"
-  =  "}"
+  = val:"}" ws? { return val; }
 
 comma ","
-  =  ","
+  = val:"," ws? { return val; }
 semicolon ";"
-  = ";"
+  = val:";" ws? { return val; }
 
 doubledot ".."
-  =  ".."
+  =  val:".." ws? { return val; }
 
 elipsis "..."
-  =  "..."
+  =  val:"..." ws? { return val; }
 
 plus "+"
-  = "+"
+  = val:"+" ws? { return val; }
 minus "-"
-  = "-"
+  = val:"-" ws? { return val; }
 asterisk "*"
-  = "*"
+  = val:"*" ws? { return val; }
 slash "/"
-  = "/"
+  = val:"/" ws? { return val; }
 
 lt "<"
-  = "<"
+  = val:"<" ws? { return val; }
 lte "<="
-  = "<="
+  = val:"<=" ws? { return val; }
 gt "<"
-  = ">"
+  = val:">" ws? { return val; }
 gte ">="
-  = ">="
+  = val:">=" ws? { return val; }
 eq "=="
-  = "=="
+  = val:"==" ws? { return val; }
 ne "!="
-  =  "!="
+  = val:"!=" ws? { return val; }
 
 and "&&"
-  =  "&&"
+  = val:"&&" ws? { return val; }
 or "||"
-  =  "||"
+  = val:"||" ws? { return val; }
+
+/**
+ * Whitespace
+ */
+ws
+  = wschar* { return null; }
+
+wschar
+  = [\n\r\t ]+
+  / comment
+
+comment
+  = '//' ([^\n]*) { return null; }
