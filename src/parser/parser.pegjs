@@ -427,3 +427,4 @@ wschar
 
 comment
   = '//' ([^\n]*) { return null; }
+  / "/*" (!"*/" .)* "*/" { return null; }

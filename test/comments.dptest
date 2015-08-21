@@ -1,9 +1,13 @@
 use puts(string);
 
+/*
+ * This is a multi-line commetn
+ * Both * and / can appaear inside it but not together
+ */
 // This is a sweet comment
 
 main {
-  return 0;
+  return /* this is an intermediate comment */ 0;
 }
 ------
 
