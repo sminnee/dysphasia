@@ -153,7 +153,7 @@ function IfBlock (test, pass, fail) {
 IfBlock.prototype.toString = function () {
   return 'IfBlock (\ntest:\n' + indent(this.test.toString()) +
     '\npass: ' + this.pass.toString() +
-    '\nfail: ' + this.fail.toString();
+    '\nfail: ' + this.fail.toString() + ')';
 };
 
 IfBlock.prototype.transformChildren = function (transformer) {
