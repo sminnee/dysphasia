@@ -1,0 +1,22 @@
+use printf(string, ...);
+
+int main {
+  int x;
+  for(x in 1..10) {
+    printf("fib(%i) = %i\n", x, fib(x));
+  };
+  return 0;
+}
+
+int fib(int x) {
+  if(x < 3) {
+    return 1;
+  } else {
+    return fib(x-1) + fib(x-2);
+  };
+}
+
+
+//fib
+//  (x | x < 2) => 1;
+//  (x)         => fib(x-1) + fib(x-2);
