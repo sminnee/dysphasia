@@ -860,12 +860,9 @@ module.exports = (function() {
     function peg$parseexpression() {
       var s0;
 
-      s0 = peg$parsefunctionCall();
+      s0 = peg$parsestringExpression();
       if (s0 === peg$FAILED) {
-        s0 = peg$parsestringExpression();
-        if (s0 === peg$FAILED) {
-          s0 = peg$parseboolean();
-        }
+        s0 = peg$parseboolean();
       }
 
       return s0;

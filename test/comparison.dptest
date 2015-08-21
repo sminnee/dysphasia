@@ -18,39 +18,34 @@ main {
 }
 ------
 define i32 @main() {
-  %var = icmp sge i1 1, 2
+  %var = icmp sge i32 1, 2
   br i1 %var, label %IfTrue, label %Continue
   IfTrue:
     ret i32 1
-    br label %Continue
   Continue:
-  %var2 = icmp sle i1 1, 2
+  %var2 = icmp sle i32 1, 2
   %var3 = and i1 %var2, false
   br i1 %var3, label %IfTrue2, label %Continue2
   IfTrue2:
     ret i32 2
-    br label %Continue2
   Continue2:
-  %var4 = icmp slt i1 1, 2
-  %var5 = icmp ne i1 3, 4
+  %var4 = icmp slt i32 1, 2
+  %var5 = icmp ne i32 3, 4
   %var6 = or i1 %var4, %var5
   br i1 %var6, label %IfTrue3, label %Continue3
   IfTrue3:
     ret i32 3
-    br label %Continue3
   Continue3:
   %var7 = mul i32 3, 2
   %var8 = add i32 5, %var7
-  %var9 = icmp sgt i1 %var8, 8
+  %var9 = icmp sgt i32 %var8, 8
   br i1 %var9, label %IfTrue4, label %Continue4
   IfTrue4:
     ret i32 4
-    br label %Continue4
   Continue4:
   br i1 true, label %IfTrue5, label %Continue5
   IfTrue5:
     ret i32 5
-    br label %Continue5
   Continue5:
   ret i32 6
 }

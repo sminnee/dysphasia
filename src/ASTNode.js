@@ -74,6 +74,17 @@ ASTNode.prototype.addExpression = function (type, expression, hint) {
 };
 
 /**
+ * Return the final statement in the list as a string
+ */
+ASTNode.prototype.getLastStatement = function () {
+  if (this.options.code.match(/(^|\n)([^\n]+)\n?$/)) {
+    return RegExp.$2;
+  } else {
+    throw SyntaxError("Can't find last statement in:\n" + this.options.code);
+  }
+};
+
+/**
  * Label the statements in this ASTNode as a block
  * @param A hint, or if it starts with %, an exact block name
  */

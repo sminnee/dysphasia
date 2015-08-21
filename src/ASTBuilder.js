@@ -59,16 +59,6 @@ ASTBuilder.prototype.expression = function (type, value, hint) {
 };
 
 /**
- * Combine 2 branches with an appropriate llvm operator - used for add, mul, etc
- */
-ASTBuilder.prototype.combineWithOperator = function (opName, type, left, right) {
-  return left.merge(right).addExpression(
-    type,
-    opName + ' ' + type + ' ' + left.value + ', ' + right.value
-  );
-};
-
-/**
  * Return a new global declaration
  */
 ASTBuilder.prototype.globalDeclare = function (content) {

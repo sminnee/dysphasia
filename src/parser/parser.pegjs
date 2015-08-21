@@ -78,8 +78,7 @@ returnStatement
     }
 
 expression
-  = functionCall
-  / stringExpression
+  = stringExpression
   / arithmeticExpression
 
 stringExpression

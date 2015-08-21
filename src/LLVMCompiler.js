@@ -120,25 +120,39 @@ LLVMCompiler.prototype.handleFnDef = function (ast) {
  */
 LLVMCompiler.prototype.handleIfBlock = function (ast) {
   // If
-  var contLabel = this.builder.nextVarName('Continue');
+  var contLabel = null;
   var falseBlock = false;
 
-  var pass = this.handle(ast.pass);
+  var trueBlock = this.handle(ast.pass);
 
-  var trueBlock = pass.addStatement('br label ' + contLabel).labelBlock('IfTrue');
+  // Only add a break statement if we haven't already returned
+  if (!trueBlock.getLastStatement().match(/^ret /)) {
+    if (!contLabel) contLabel = this.builder.nextVarName('Continue');
+    trueBlock = trueBlock.addStatement('br label ' + contLabel);
+  }
+  trueBlock = trueBlock.labelBlock('IfTrue');
 
   // Fail block handling for If..Else
-  var fail = false;
   if (ast.fail.nodeType !== 'Empty') {
-    fail = this.handle(ast.fail);
-    falseBlock = fail.addStatement('br label ' + contLabel).labelBlock('IfFalse');
+    falseBlock = this.handle(ast.fail);
+    if (!falseBlock.getLastStatement().match(/^ret /)) {
+      if (!contLabel) contLabel = this.builder.nextVarName('Continue');
+      falseBlock = falseBlock.addStatement('br label ' + contLabel);
+    }
+    falseBlock = falseBlock.labelBlock('IfFalse');
+  } else {
+    if (!contLabel) contLabel = this.builder.nextVarName('Continue');
   }
 
   var test = this.handle(ast.test);
   var branch = test.addStatement('br i1 ' + test.value + ', label ' + trueBlock.blockLabel + ', label ' +
-    (fail ? falseBlock.blockLabel : contLabel));
+    (falseBlock ? falseBlock.blockLabel : contLabel));
 
-  return branch.merge(trueBlock).merge(falseBlock).labelBlockEnd(contLabel);
+  var result = branch.merge(trueBlock).merge(falseBlock);
+  if (contLabel) {
+    result = result.labelBlockEnd(contLabel);
+  }
+  return result;
 };
 
 /**
@@ -274,11 +288,15 @@ LLVMCompiler.prototype.handleOp = function (ast) {
     '||': 'or'
   };
 
-  return this.builder.combineWithOperator(
-    opMap[ast.op],
-    this.handle(ast.type).type,
-    this.handle(ast.left),
-    this.handle(ast.right)
+  var left = this.handle(ast.left);
+  var right = this.handle(ast.right);
+  var outputType = this.handle(ast.type).type;
+
+  if (left.type !== right.type) throw new SyntaxError("Types don't match: " + ast.toString());
+
+  return left.merge(right).addExpression(
+    outputType,
+    opMap[ast.op] + ' ' + left.type + ' ' + left.value + ', ' + right.value
   );
 };
 
