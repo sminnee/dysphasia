@@ -12,28 +12,60 @@
 start
   = ws? items:item*
     {
-      return new Dys.File(new Dys.List(items));
+      var list = new Dys.List();
+      items.forEach(function (item) {
+        if(item.nodeType) item = [item];
+        list = list.concat(item);
+      });
+      return new Dys.File(list);
     }
 
 item
   = fnDef
   / useStatement
 
+/**
+ * Assign a name & return type to a set of lambdas
+ */
 fnDef
-  = type:(type ws)? name:symbolname args:fnArgDef? lbrace content:blockcontent rbrace
+  = type:(type ws)? name:symbolname lambdas:fnLambda+
+    {
+      return lambdas.map(function (lambda) {
+        lambda.name = name;
+        if(type) lambda.type = type[0];
+        return lambda;
+      });
+    }
+
+/**
+ * function without a name
+ */
+fnLambda
+  = args:fnArgDef? lbrace content:blockcontent rbrace
     {
       return new Dys.FnDef(
-        name,
-        type ? type[0] : Dys.Empty,
-        args ? new Dys.List(args) : Dys.Empty,
+        Dys.Empty,
+        Dys.Empty,
+        args ? new Dys.List(args[0]) : Dys.Empty,
+        (args && args[1]) ? args[1] : Dys.Empty,
         new Dys.List(content)
+      );
+    }
+  / args:fnArgDef? arrow content:statementLine
+    {
+      return new Dys.FnDef(
+        Dys.Empty,
+        Dys.Empty,
+        args ? new Dys.List(args[0]) : Dys.Empty,
+        (args && args[1]) ? args[1] : Dys.Empty,
+        new Dys.List([content])
       );
     }
 
 fnArgDef
-  = lparenth args:fnArgDefList rparenth
+  = lparenth args:fnArgDefList guard:fnGuardDef? rparenth
     {
-      return args;
+      return [args, guard];
     }
 
 fnArgDefList
@@ -49,8 +81,17 @@ fnArgDefList
 fnSingleArgDef
   = type:(type ws)? variable:variable
     {
-      variable.type = type[0];
+      variable.type = type ? type[0] : Dys.Empty;
       return variable;
+    }
+
+/**
+ * Guard expression, e.g. x | x > 2
+ */
+fnGuardDef
+  = pipe expression:arithmeticExpression
+    {
+      return expression;
     }
 
 blockcontent
@@ -387,6 +428,10 @@ doubledot ".."
 
 elipsis "..."
   =  val:"..." ws? { return val; }
+arrow "=>"
+  =  val:"=>" ws? { return val; }
+pipe "|"
+  =  val:"|" ws? { return val; }
 
 plus "+"
   = val:"+" ws? { return val; }

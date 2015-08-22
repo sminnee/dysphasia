@@ -67,9 +67,32 @@ File.prototype.transformChildren = function (transformer) {
  */
 function List (items) {
   this.nodeType = 'List';
-  validateItems(items);
-  this.items = items.filter(function (item) { return item.nodeType !== 'Empty'; });
+  if(items) {
+    validateItems(items);
+    this.items = items.filter(function (item) { return item.nodeType !== 'Empty'; });
+  } else {
+    this.items = [];
+  }
 }
+
+Object.defineProperties(List.prototype, {
+  first: {
+    get: function () {
+      return this.items[0];
+    },
+    set: function (item) {
+      this.items[0] = item;
+    }
+  },
+  last: {
+    get: function () {
+      return this.items[this.items.length - 1];
+    },
+    set: function (item) {
+      this.items[this.items.length - 1] = item;
+    }
+  }
+});
 
 List.prototype.toString = function () {
   return '[\n' + indent(this.items.map(function (item) { return item.toString(); }).join('\n')) + '\n]';
@@ -121,23 +144,29 @@ UseStatement.prototype.transformChildren = function (transformer) {
 /**
  * A function definition
  */
-function FnDef (name, type, args, statements) {
+function FnDef (name, type, args, guard, statements) {
   this.nodeType = 'FnDef';
   this.name = name;
   this.type = type;
   this.args = args;
+  this.guard = guard;
   this.statements = statements;
 }
 
 FnDef.prototype.toString = function () {
   var type = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
+  var guard = (this.guard.nodeType === 'Empty') ? '' : '\nguard: ' + this.guard.toString();
+
   return 'FnDef ' + type + this.name + ' (' +
     '\nargs: ' + this.args.toString() +
+    guard +
     '\nstatements: ' + this.statements.toString() + ')';
 };
 
 FnDef.prototype.transformChildren = function (transformer) {
-  return new FnDef(this.name, transformer(this.type), transformer(this.args), transformer(this.statements));
+  return new FnDef(
+    this.name, transformer(this.type), transformer(this.args), transformer(this.guard), transformer(this.statements)
+  );
 };
 
 /**

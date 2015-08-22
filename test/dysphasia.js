@@ -3,6 +3,8 @@
 var Dysphasia = require('../src/dysphasia');
 var assert = require('assert');
 var fs = require('fs');
+
+var InlineFnGuards = require('../src/ast-transforms/InlineFnGuards');
 var InferTypes = require('../src/ast-transforms/InferTypes');
 var GetFnDefs = require('../src/ast-transforms/GetFnDefs');
 
@@ -45,6 +47,10 @@ describe('Dysphasia', function () {
     testAST('test/call-custom-fn.dptest');
     testIntermediateCode('test/call-custom-fn.dptest');
   });
+  it('allows concise arrow syntax for function definition', function () {
+    testAST('test/concise-functions.dptest');
+    testASTTransform('test/concise-functions.dptest', [new InlineFnGuards()]);
+  });
 });
 
 function testAST (filename) {
@@ -53,15 +59,17 @@ function testAST (filename) {
   assert.equal(dp.parseTree().toString(), parts.ast.replace(/\s+$/, ''));
 }
 
-/*
-function testASTTransform (filename, transform) {
+function testASTTransform (filename, transforms) {
   var parts = loadTest(filename);
   var dp = Dysphasia.loadString(parts.source);
   var ast = dp.parseTree();
-  ast = transform.handle(ast);
-  assert.equal(ast.toString(), parts.ast.replace(/\s+$/, ''));
+
+  transforms.forEach(function (transform) {
+    ast = transform.handle(ast);
+  });
+
+  assert.equal(ast.toString(), parts.transformed.replace(/\s+$/, ''));
 }
-*/
 
 function testASTInferredTypes (filename) {
   var parts = loadTest(filename);
@@ -91,6 +99,7 @@ function loadTest (filename) {
   return {
     source: parts[0],
     compiled: parts[1],
-    ast: parts[2]
+    ast: parts[2],
+    transformed: parts[3]
   };
 }
