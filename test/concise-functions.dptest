@@ -1,0 +1,109 @@
+timesTwo
+  (x | x >= 10) => x * 3;
+  (x)           => x * 2;
+
+int otherOne (int y | y < 5) => y + 1;
+int otherOne (int y) => y + 2;
+
+------
+
+------
+File ([
+  FnDef timesTwo (
+  args: [
+    Variable (x)
+  ]
+  guard: Op [Type bool] (>=
+    Variable (x)
+    Literal [Type int] (10)
+  )
+  statements: [
+    Op (*
+      Variable (x)
+      Literal [Type int] (3)
+    )
+  ])
+  FnDef timesTwo (
+  args: [
+    Variable (x)
+  ]
+  statements: [
+    Op (*
+      Variable (x)
+      Literal [Type int] (2)
+    )
+  ])
+  FnDef [Type int] otherOne (
+  args: [
+    Variable [Type int] (y)
+  ]
+  guard: Op [Type bool] (<
+    Variable (y)
+    Literal [Type int] (5)
+  )
+  statements: [
+    Op (+
+      Variable (y)
+      Literal [Type int] (1)
+    )
+  ])
+  FnDef [Type int] otherOne (
+  args: [
+    Variable [Type int] (y)
+  ]
+  statements: [
+    Op (+
+      Variable (y)
+      Literal [Type int] (2)
+    )
+  ])
+])
+------
+File ([
+  FnDef timesTwo (
+  args: [
+    Variable (x)
+  ]
+  statements: [
+    IfBlock (
+    test:
+      Op [Type bool] (>=
+        Variable (x)
+        Literal [Type int] (10)
+      )
+    pass: [
+      ReturnStatement (Op (*
+        Variable (x)
+        Literal [Type int] (3)
+      ))
+    ]
+    fail: Empty)
+    ReturnStatement (Op (*
+      Variable (x)
+      Literal [Type int] (2)
+    ))
+  ])
+  FnDef [Type int] otherOne (
+  args: [
+    Variable [Type int] (y)
+  ]
+  statements: [
+    IfBlock (
+    test:
+      Op [Type bool] (<
+        Variable (y)
+        Literal [Type int] (5)
+      )
+    pass: [
+      ReturnStatement (Op (+
+        Variable (y)
+        Literal [Type int] (1)
+      ))
+    ]
+    fail: Empty)
+    ReturnStatement (Op (+
+      Variable (y)
+      Literal [Type int] (2)
+    ))
+  ])
+])
