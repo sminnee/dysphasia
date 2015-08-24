@@ -259,16 +259,17 @@ arrayExpression
 
 arrayLiteral
   = start:integer doubledot end:integer { return new Dys.Literal({ start: start, end: end }, 'range'); }
-  / lbracket first:expression rest:extraArrayItems rbracket
+  / lbracket items:arrayItems rbracket
     {
-      return new Dys.Literal(new Dys.List(rest ? [first].concat(rest) : [first]), 'array')
+      return new Dys.Literal(new Dys.List(items), 'array')
     }
 
-extraArrayItems
-  = comma next:expression rest:extraFunctionArguments?
+arrayItems
+  = first:expression comma rest:arrayItems
     {
-      return next ? [next].concat(rest) : [next];
+      return rest ? [first].concat(rest) : [first];
     }
+  / expression
 
 /**
  * Variables
@@ -409,8 +410,8 @@ rparenth ")"
 lbracket "["
   = val:"[" ws? { return val; }
 
-rbracket "["
-  = val:"[" ws? { return val; }
+rbracket "]"
+  = val:"]" ws? { return val; }
 
 lbrace "{"
   = val:"{" ws? { return val; }

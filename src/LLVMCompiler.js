@@ -163,23 +163,35 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
   var loopSource = this.handle(ast.loopSource);
   var block = this.handle(ast.statements);
 
-  // TODO: Only range is handled
   var startValue = null;
   var endValue = null;
-  if (loopSource.type === '*range') {
-    startValue = loopSource.value.start;
-    endValue = loopSource.value.end;
+  if (loopSource.start && loopSource.end) {
+    startValue = loopSource.start;
+    endValue = loopSource.end;
+  } else {
+    throw new SyntaxError('Can\'t iterate on loopSource without start & end: ' + loopSource);
   }
 
-  var iterator;
+  var iterator = this.builder.literal('i32', '%i');
+  var boundVar = this.builder.noop();
+
   // TODO: Better empty check
   if (ast.variable.nodeType !== 'Empty') {
     if (ast.variable.type.nodeType === 'Empty') {
       throw new SyntaxError("Can't  determine type of " + ast.variable.toString());
     }
-    iterator = this.handle(ast.variable);
-  } else {
-    iterator = this.builder.literal('i32', '%i');
+
+    boundVar = this.handle(ast.variable);
+    // Simple assignment of the index
+    if (loopSource.type === '*range') {
+      boundVar = this.builder.expression(iterator.type, iterator.value, boundVar.value);
+
+    // Look up array item
+    } else {
+      var ptrVar = this.builder.expression('i32*', 'getelementptr inbounds ' + loopSource.type + '* ' + loopSource.value +
+        ', i32 0, ' + iterator.type + ' ' + iterator.value, 'ptr');
+      boundVar = ptrVar.addExpression('i32', 'load i32* ' + ptrVar.value, boundVar.value);
+    }
   }
 
   var loopLabel = this.builder.nextVarName('Loop');
@@ -194,11 +206,13 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
   entry = this.builder.statement('br label ' + entry.blockLabel).merge(entry);
 
   // Loop block start - value is the Phi expression: our incrementor variable
-  var loop = startValue
+  var loop = loopSource
+    .merge(startValue)
     .merge(endValue)
     .addExpression(iterator.type, 'phi ' + iterator.type +
       ' [ ' + startValue.value + ', ' + entry.blockLabel +
       ' ], [ ' + nextVar + ', ' + loopLabel + ' ]', iterator.value)
+    .merge(boundVar)
     .labelBlock(loopLabel);
 
   // Test and break
@@ -209,7 +223,7 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
 
   loop = loop
     .merge(block)
-    .addExpression('i32', 'add i32 ' + loop.value + ', 1', nextVar);
+    .addExpression('i32', 'add i32 ' + iterator.value + ', 1', nextVar);
 
   // Join it all together!
   return entry.merge(loop).merge(test).labelBlockEnd(contLabel);
@@ -356,21 +370,43 @@ LLVMCompiler.prototype.handleType = function (ast) {
  */
 LLVMCompiler.prototype.handleLiteral = function (ast) {
   var llvm = this;
+  var type = null;
+  var val = null;
+
   switch (ast.type.type) {
     case 'array':
-      return this.builder.literal(
-        '*list',
-        ast.value.map(function (i) { return llvm.handle(i); })
+      var literal = '[' + ast.value.map(function (astItem) {
+        var item = llvm.handle(astItem);
+        if (item.code) throw new SyntaxError('Can\'t put ' + astItem.toString() + ' in an array literal');
+        if (!type) {
+          type = item.type;
+        } else if (type !== item.type) {
+          throw new SyntaxError('Inconsistent types: ' + item.type + ' doesn\'t match ' + type);
+        }
+        return item.type + ' ' + item.value;
+      }).join(', ') + ']';
+
+      val = this.builder.globalConst(
+        '[' + ast.value.length + ' x ' + type + ']',
+        'private unnamed_addr constant ' + '[' + ast.value.length + ' x ' + type + ']' + literal
       );
+
+      val.length = ast.value.length;
+      val.start = this.builder.literal('i32', 0);
+      val.end = this.builder.literal('i32', val.length - 1);
+      return val;
 
     case 'range':
-      return this.builder.literal(
+      val = this.builder.literal(
         '*range',
-        { start: this.handle(ast.value.start), end: this.handle(ast.value.end) }
+        null
       );
+      val.start = this.handle(ast.value.start);
+      val.end = this.handle(ast.value.end);
+      return val;
 
     case 'string':
-      var type = '[' + (ast.value.length + 1) + ' x i8]';
+      type = '[' + (ast.value.length + 1) + ' x i8]';
       return this.builder.globalConst(
         type,
         'private unnamed_addr constant ' + type + ' c"' +

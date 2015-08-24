@@ -67,7 +67,7 @@ File.prototype.transformChildren = function (transformer) {
  */
 function List (items) {
   this.nodeType = 'List';
-  if(items) {
+  if (items) {
     validateItems(items);
     this.items = items.filter(function (item) { return item.nodeType !== 'Empty'; });
   } else {
@@ -76,6 +76,11 @@ function List (items) {
 }
 
 Object.defineProperties(List.prototype, {
+  length: {
+    get: function () {
+      return this.items.length;
+    }
+  },
   first: {
     get: function () {
       return this.items[0];

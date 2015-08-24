@@ -22,9 +22,10 @@ define i32 @main() {
   Entry:
     br label %Loop
   Loop:
-    %x = phi i32 [ 1, %Entry ], [ %nextvar, %Loop ]
+    %i = phi i32 [ 1, %Entry ], [ %nextvar, %Loop ]
+    %x = %i
   %var = call i32 (i32)* @displayNumber(i32 %x)
-  %nextvar = add i32 %x, 1
+  %nextvar = add i32 %i, 1
   %break = icmp ugt i32 %nextvar, 5
   br i1 %break, label %Continue, label %Loop
   Continue:

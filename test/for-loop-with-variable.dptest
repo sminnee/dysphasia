@@ -18,12 +18,13 @@ define i32 @main() {
   Entry:
     br label %Loop
   Loop:
-    %x = phi i32 [ 1, %Entry ], [ %nextvar, %Loop ]
+    %i = phi i32 [ 1, %Entry ], [ %nextvar, %Loop ]
+    %x = %i
   %strConcat = alloca i8, i32 100
   %var = getelementptr [6 x i8]* @str, i64 0, i64 0
   %var2 = call i32 (i8*, i32, i8*, ...)* @snprintf(i8* %strConcat, i32 100, i8* %var, i32 %x)
   %var3 = call i32 (i8*)* @puts(i8* %strConcat)
-  %nextvar = add i32 %x, 1
+  %nextvar = add i32 %i, 1
   %break = icmp ugt i32 %nextvar, 5
   br i1 %break, label %Continue, label %Loop
   Continue:

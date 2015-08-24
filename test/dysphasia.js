@@ -31,6 +31,10 @@ describe('Dysphasia', function () {
     testAST('test/for-loop-with-variable.dptest');
     testIntermediateCode('test/for-loop-with-variable.dptest');
   });
+  it('supports for loops iterating an array', function () {
+    testAST('test/for-loop-array.dptest');
+    testIntermediateCode('test/for-loop-array.dptest');
+  });
   it('supports comments', function () {
     testAST('test/comments.dptest');
   });

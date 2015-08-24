@@ -1,0 +1,59 @@
+use printf(string, ...);
+main {
+  int x;
+  for(x in [1,4,9,16,25]) {
+    printf("x = %i\n", x);
+  };
+  return 0;
+}
+------
+declare i32 @printf(i8* noalias nocapture, ...) nounwind
+@str = private unnamed_addr constant [5 x i32][i32 1, i32 4, i32 9, i32 16, i32 25]
+@str2 = private unnamed_addr constant [8 x i8] c"x = %i\0A\00"
+define i32 @main() {
+  br label %Entry
+  Entry:
+    br label %Loop
+  Loop:
+    %i = phi i32 [ 0, %Entry ], [ %nextvar, %Loop ]
+    %ptr = getelementptr inbounds [5 x i32]* @str, i32 0, i32 %i
+    %x = load i32* %ptr
+  %var = getelementptr [8 x i8]* @str2, i64 0, i64 0
+  %var2 = call i32 (i8*, ...)* @printf(i8* %var, i32 %x)
+  %nextvar = add i32 %i, 1
+  %break = icmp ugt i32 %nextvar, 4
+  br i1 %break, label %Continue, label %Loop
+  Continue:
+  ret i32 0
+}
+
+------
+File ([
+  UseStatement printf var_args ([
+    [Type string]
+  ])
+  FnDef main (
+  args: Empty
+  statements: [
+    VariableDeclaration ([Type int], Variable (x))
+    ForLoop (
+    variable:
+      Variable (x)
+    loopSource:
+      Literal [Type array] ([
+        Literal [Type int] (1)
+        Literal [Type int] (4)
+        Literal [Type int] (9)
+        Literal [Type int] (16)
+        Literal [Type int] (25)
+      ])
+    statements: [
+      FnCall printf ([
+        Literal [Type string] (x = %i
+        )
+        Variable (x)
+      ])
+    ])
+    ReturnStatement (Literal [Type int] (0))
+  ])
+])
