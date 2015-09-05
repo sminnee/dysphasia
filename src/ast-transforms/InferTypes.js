@@ -73,7 +73,7 @@ InferTypes.prototype.handleVariableDeclaration = function (ast) {
 };
 
 InferTypes.prototype.handleVariable = function (ast) {
-  if (ast.type.nodeType === 'Empty') {
+  if (ast.type.isEmpty()) {
     var inferredType = this.getVariable(ast.name);
     if (!inferredType) throw new SyntaxError('Can\'t infer type for "' + ast.name + '"');
 

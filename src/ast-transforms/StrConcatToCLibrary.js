@@ -27,7 +27,7 @@ StrConcatToCLibrary.prototype.handleStrConcat = function (ast) {
 
   ast.items.forEach(function (item) {
     // Look up variable type
-    if (item.type.nodeType === 'Empty') {
+    if (item.type.isEmpty()) {
       throw new SyntaxError('Can\'t determine type of ' + item.toString());
     }
 

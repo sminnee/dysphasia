@@ -368,7 +368,7 @@ function Op (op, left, right, type) {
 util.inherits(Op, ASTNode);
 
 Op.prototype.toString = function () {
-  var typeStr = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
+  var typeStr = (this.type.isEmpty()) ? '' : (this.type.toString() + ' ');
   return 'Op ' + typeStr + '(' + this.op + '\n' + indent(this.left.toString() + '\n' + this.right.toString()) + '\n)';
 };
 
@@ -483,14 +483,9 @@ Variable.prototype.transformChildren = function (transformer) {
  * A reference to a type
  *
  * @param string type: int, float, string, array or range
- * @param value:
- *  - value for type int/float/string
- *  - array for type array
- *  - map { start, end } for type range
  */
 function Type (type) {
   ASTNode.call(this, 'Type');
-
   this.type = type;
 }
 util.inherits(Type, ASTNode);

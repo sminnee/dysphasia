@@ -21,7 +21,7 @@ LLVMCompiler.prototype.generateLLVMCode = function (ast) {
  * Return a compiler helper for a particular method
  * Ensures local variable declarations stay local
  */
-LLVMCompiler.prototype.forMethod = function (methodName) {
+LLVMCompiler.prototype.forMethod = function () {
   var self = this;
   var l = new LLVMCompiler();
   l.builder = this.builder;
@@ -40,14 +40,20 @@ LLVMCompiler.prototype.getFnDef = function (name) {
 LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef, argCallback) {
   var self = this;
 
-  if (fnDef.args.nodeType === 'Empty') return '';
+  if (fnDef.args.isEmpty()) {
+    return '';
+  }
 
   var argSpec = fnDef.args.map(function (arg) {
     var type = self.handle(arg).type;
-    if (argCallback) type = argCallback(arg, type);
+    if (argCallback) {
+      type = argCallback(arg, type);
+    }
     return type;
   }).join(', ');
-  if (fnDef.varArgs) argSpec += ', ...';
+  if (fnDef.varArgs) {
+    argSpec += ', ...';
+  }
   return argSpec;
 };
 
@@ -127,7 +133,9 @@ LLVMCompiler.prototype.handleIfBlock = function (ast) {
 
   // Only add a break statement if we haven't already returned
   if (!trueBlock.getLastStatement().match(/^ret /)) {
-    if (!contLabel) contLabel = this.builder.nextVarName('Continue');
+    if (!contLabel) {
+      contLabel = this.builder.nextVarName('Continue');
+    }
     trueBlock = trueBlock.addStatement('br label ' + contLabel);
   }
   trueBlock = trueBlock.labelBlock('IfTrue');
@@ -136,12 +144,16 @@ LLVMCompiler.prototype.handleIfBlock = function (ast) {
   if (ast.fail.nodeType !== 'Empty') {
     falseBlock = this.handle(ast.fail);
     if (!falseBlock.getLastStatement().match(/^ret /)) {
-      if (!contLabel) contLabel = this.builder.nextVarName('Continue');
+      if (!contLabel) {
+        contLabel = this.builder.nextVarName('Continue');
+      }
       falseBlock = falseBlock.addStatement('br label ' + contLabel);
     }
     falseBlock = falseBlock.labelBlock('IfFalse');
   } else {
-    if (!contLabel) contLabel = this.builder.nextVarName('Continue');
+    if (!contLabel) {
+      contLabel = this.builder.nextVarName('Continue');
+    }
   }
 
   var test = this.handle(ast.test);
@@ -177,7 +189,7 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
 
   // TODO: Better empty check
   if (ast.variable.nodeType !== 'Empty') {
-    if (ast.variable.type.nodeType === 'Empty') {
+    if (ast.variable.type.isEmpty()) {
       throw new SyntaxError("Can't  determine type of " + ast.variable.toString());
     }
 
@@ -306,7 +318,9 @@ LLVMCompiler.prototype.handleOp = function (ast) {
   var right = this.handle(ast.right);
   var outputType = this.handle(ast.type).type;
 
-  if (left.type !== right.type) throw new SyntaxError("Types don't match: " + ast.toString());
+  if (left.type !== right.type) {
+    throw new SyntaxError("Types don't match: " + ast.toString());
+  }
 
   return left.merge(right).addExpression(
     outputType,
@@ -318,7 +332,7 @@ LLVMCompiler.prototype.handleOp = function (ast) {
  * Represents a buffer that can be loaded by another function call (usually a c-library call)
  */
 LLVMCompiler.prototype.handleVariable = function (ast) {
-  if (ast.type.nodeType === 'Empty') {
+  if (ast.type.isEmpty()) {
     throw new SyntaxError('Variable without types referneced; has the InferTypes transform executed? ' +
       ast.toString());
   }
