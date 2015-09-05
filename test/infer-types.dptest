@@ -14,16 +14,13 @@ File ([
     [Type string]
   ])
   FnDef main (
-  args: Empty
   statements: [
     ForLoop (
-    variable:
-      Variable [Type int] (x)
-    loopSource:
-      Literal [Type range] (
-        Literal [Type int] (1)
-        Literal [Type int] (5)
-      )
+    variable: Variable [Type int] (x)
+    loopSource: Literal [Type range] (
+      Literal [Type int] (1)
+      Literal [Type int] (5)
+    )
     statements: [
       FnCall puts ([
         StrConcat [Type string] ([

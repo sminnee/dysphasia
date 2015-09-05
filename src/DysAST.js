@@ -1,6 +1,65 @@
+var util = require('util');
+
 /**
  * Classes defining the dypashaia AST
  */
+
+/**
+ * Base class of all AST Nodes
+ * @param string nodeType Name of the node type
+ */
+function ASTNode (nodeType) {
+  this.nodeType = nodeType ? nodeType : 'Empty';
+}
+
+/**
+ * Tests for an empty node
+ * @return boolean True if the node is empty
+ */
+ASTNode.prototype.isEmpty = function () {
+  return this.nodeType === 'Empty';
+};
+
+/**
+ * Build a string representation of the given node.
+ * Helper method for toString().
+ *
+ * @param  array inlineItems  Items to show inline after the node type. Empties ignored.
+ * @param  array childItems   Items to show as named parameteres. Empties ignored.
+ * @return string             A string representation of this node
+ */
+ASTNode.prototype.stringBuilder = function (inlineItems, childItems) {
+  // Always show the node name
+  var output = this.nodeType;
+
+  // Some items are shown inline next to the node name;
+  if (inlineItems) {
+    inlineItems.forEach(function (item) {
+      if (!item) return;
+      if (item.isEmpty && item.isEmpty()) return;
+
+      output += ' ' + (item.toString ? item.toString() : item);
+    });
+  }
+
+  // Some items are shown as a nested block with named labels
+  if (childItems) {
+    var item;
+    output += ' (';
+    for (var key in childItems) {
+      item = childItems[key];
+      if (!item) continue;
+      if (item.isEmpty && item.isEmpty()) continue;
+
+      if (key) {
+        output += '\n' + key + ': ';
+      }
+      output += (item.toString ? item.toString() : item);
+    }
+    output += ')';
+  }
+  return output;
+};
 
 /**
  * Intends a string value by 2 spaces
@@ -13,7 +72,9 @@ function indent (str) {
  * Validate a single item, throw a SyntaxError if there is a bad one
  */
 function validateItem (item, className) {
-  if (typeof className !== 'string') className = 'List';
+  if (typeof className !== 'string') {
+    className = 'List';
+  }
 
   if (!item || !item.nodeType) {
     throw new SyntaxError('Can\'t add item to Dys.' + className + ': ' + item);
@@ -36,23 +97,24 @@ function validateItems (items, singleItemAllowed) {
  * A null value
  * We use this singleton to represent unset parameters for type consistency
  */
-var Empty = {
-  nodeType: 'Empty',
-  toString: function () {
-    return 'Empty';
-  },
-  transformChildren: function () {
-    return Empty;
-  }
+var Empty = new ASTNode('Empty');
+Empty.toString = function () {
+  return 'Empty';
+};
+
+Empty.transformChildren = function (transformer) {
+  return this;
 };
 
 /**
  * A Dysphasia file
  */
 function File (statements) {
+  ASTNode.call(this, 'File');
   this.nodeType = 'File';
   this.statements = statements;
 }
+util.inherits(File, ASTNode);
 
 File.prototype.toString = function () {
   return 'File (' + this.statements.toString() + ')';
@@ -66,7 +128,7 @@ File.prototype.transformChildren = function (transformer) {
  * An ordered list of AST nodes
  */
 function List (items) {
-  this.nodeType = 'List';
+  ASTNode.call(this, 'List');
   if (items) {
     validateItems(items);
     this.items = items.filter(function (item) { return item.nodeType !== 'Empty'; });
@@ -74,6 +136,7 @@ function List (items) {
     this.items = [];
   }
 }
+util.inherits(List, ASTNode);
 
 Object.defineProperties(List.prototype, {
   length: {
@@ -129,17 +192,22 @@ List.prototype.concat = function (extra) {
  * A 'use' statement for importing external functions
  */
 function UseStatement (name, type, args, varArgs) {
-  this.nodeType = 'UseStatement';
+  ASTNode.call(this, 'UseStatement');
   this.type = type;
   this.name = name;
   this.args = args;
   this.varArgs = varArgs;
 }
+util.inherits(UseStatement, ASTNode);
 
 UseStatement.prototype.toString = function () {
-  var type = (this.type.nodeType === 'Empty') ? '' : (this.type.toString + ' ');
-  return 'UseStatement ' + type + this.name + (this.varArgs ? ' var_args ' : ' ') + '(' +
-    this.args.toString() + ')';
+  return this.stringBuilder([
+    this.type,
+    this.name,
+    (this.varArgs ? 'var_args' : null)
+  ], {
+    '': this.args
+  });
 };
 
 UseStatement.prototype.transformChildren = function (transformer) {
@@ -150,22 +218,24 @@ UseStatement.prototype.transformChildren = function (transformer) {
  * A function definition
  */
 function FnDef (name, type, args, guard, statements) {
-  this.nodeType = 'FnDef';
+  ASTNode.call(this, 'FnDef');
   this.name = name;
   this.type = type;
   this.args = args;
   this.guard = guard;
   this.statements = statements;
 }
+util.inherits(FnDef, ASTNode);
 
 FnDef.prototype.toString = function () {
-  var type = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
-  var guard = (this.guard.nodeType === 'Empty') ? '' : '\nguard: ' + this.guard.toString();
-
-  return 'FnDef ' + type + this.name + ' (' +
-    '\nargs: ' + this.args.toString() +
-    guard +
-    '\nstatements: ' + this.statements.toString() + ')';
+  return this.stringBuilder(
+    [ this.type, this.name ],
+    {
+      args: this.args,
+      guard: this.guard,
+      statements: this.statements
+    }
+  );
 };
 
 FnDef.prototype.transformChildren = function (transformer) {
@@ -178,16 +248,19 @@ FnDef.prototype.transformChildren = function (transformer) {
  * An if block
  */
 function IfBlock (test, pass, fail) {
-  this.nodeType = 'IfBlock';
+  ASTNode.call(this, 'IfBlock');
   this.test = test;
   this.pass = pass;
   this.fail = fail;
 }
+util.inherits(IfBlock, ASTNode);
 
 IfBlock.prototype.toString = function () {
-  return 'IfBlock (\ntest:\n' + indent(this.test.toString()) +
-    '\npass: ' + this.pass.toString() +
-    '\nfail: ' + this.fail.toString() + ')';
+  return this.stringBuilder([], {
+    test: this.test,
+    pass: this.pass,
+    fail: this.fail
+  });
 };
 
 IfBlock.prototype.transformChildren = function (transformer) {
@@ -198,16 +271,19 @@ IfBlock.prototype.transformChildren = function (transformer) {
  * A for loop
  */
 function ForLoop (variable, loopSource, statements) {
-  this.nodeType = 'ForLoop';
+  ASTNode.call(this, 'ForLoop');
   this.variable = variable;
   this.loopSource = loopSource;
   this.statements = statements;
 }
+util.inherits(ForLoop, ASTNode);
 
 ForLoop.prototype.toString = function () {
-  return 'ForLoop (\nvariable:\n' + indent(this.variable.toString()) +
-    '\nloopSource:\n' + indent(this.loopSource.toString()) +
-    '\nstatements: ' + this.statements.toString() + ')';
+  return this.stringBuilder([], {
+    variable: this.variable,
+    loopSource: this.loopSource,
+    statements: this.statements
+  });
 };
 
 ForLoop.prototype.transformChildren = function (transformer) {
@@ -218,15 +294,15 @@ ForLoop.prototype.transformChildren = function (transformer) {
  * A function call
  */
 function FnCall (name, args) {
-  this.nodeType = 'FnCall';
+  ASTNode.call(this, 'FnCall');
   this.name = name;
   this.args = args;
   this.type = Empty;
 }
+util.inherits(FnCall, ASTNode);
 
 FnCall.prototype.toString = function () {
-  var type = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
-  return 'FnCall ' + type + this.name + ' (' + this.args.toString() + ')';
+  return this.stringBuilder([this.type, this.name], { '': this.args });
 };
 
 FnCall.prototype.transformChildren = function (transformer) {
@@ -237,14 +313,14 @@ FnCall.prototype.transformChildren = function (transformer) {
  * A 'return' statement
  */
 function ReturnStatement (expression, type) {
-  this.nodeType = 'ReturnStatement';
+  ASTNode.call(this, 'ReturnStatement');
   this.expression = expression;
   this.type = type ? type : Empty;
 }
+util.inherits(ReturnStatement, ASTNode);
 
 ReturnStatement.prototype.toString = function () {
-  var typeStr = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
-  return 'ReturnStatement ' + typeStr + '(' + this.expression.toString() + ')';
+  return this.stringBuilder([this.type], { '': this.expression });
 };
 
 ReturnStatement.prototype.transformChildren = function (transformer) {
@@ -255,6 +331,8 @@ ReturnStatement.prototype.transformChildren = function (transformer) {
  * A variable declaration
  */
 function VariableDeclaration (variable, type) {
+  ASTNode.call(this, 'VariableDeclaration');
+
   if (type.nodeType !== 'Type') {
     throw new SyntaxError('VariableDeclaration type must be a Dys.Type object');
   }
@@ -266,9 +344,10 @@ function VariableDeclaration (variable, type) {
   this.type = type;
   this.variable = variable;
 }
+util.inherits(VariableDeclaration, ASTNode);
 
 VariableDeclaration.prototype.toString = function () {
-  return 'VariableDeclaration (' + this.type + ', ' + this.variable + ')';
+  return this.stringBuilder([this.type], { '': this.variable });
 };
 
 VariableDeclaration.prototype.transformChildren = function (transformer) {
@@ -279,12 +358,14 @@ VariableDeclaration.prototype.transformChildren = function (transformer) {
  * A binary operation
  */
 function Op (op, left, right, type) {
-  this.nodeType = 'Op';
+  ASTNode.call(this, 'Op');
+
   this.op = op;
   this.left = left;
   this.right = right;
   this.type = type ? type : Empty;
 }
+util.inherits(Op, ASTNode);
 
 Op.prototype.toString = function () {
   var typeStr = (this.type.nodeType === 'Empty') ? '' : (this.type.toString() + ' ');
@@ -299,7 +380,8 @@ Op.prototype.transformChildren = function (transformer) {
  * A string concatenation
  */
 function StrConcat (left, right) {
-  this.nodeType = 'StrConcat';
+  ASTNode.call(this, 'StrConcat');
+
   this.type = new Type('string');
 
   validateItem(left, 'StrConcat');
@@ -322,9 +404,10 @@ function StrConcat (left, right) {
     }
   }
 }
+util.inherits(StrConcat, ASTNode);
 
 StrConcat.prototype.toString = function () {
-  return 'StrConcat ' + this.type.toString() + ' (' + this.items.toString() + ')';
+  return this.stringBuilder([this.type], { '': this.items });
 };
 
 StrConcat.prototype.transformChildren = function (transformer) {
@@ -335,13 +418,15 @@ StrConcat.prototype.transformChildren = function (transformer) {
  * A casted value
  */
 function Cast (type, expression) {
-  this.nodeType = 'Cast';
+  ASTNode.call(this, 'Cast');
+
   this.type = type;
   this.expression = expression;
 }
+util.inherits(Cast, ASTNode);
 
 Cast.prototype.toString = function () {
-  return 'Cast (' + this.type.toString() + ' ' + this.expression.toString() + ')';
+  return this.stringBuilder([this.type], { '': this.expression });
 };
 
 Cast.prototype.transformChildren = function (transformer) {
@@ -352,10 +437,12 @@ Cast.prototype.transformChildren = function (transformer) {
  * A buffer for loading string values into
  */
 function Buffer (variable, length) {
-  this.nodeType = 'Buffer';
+  ASTNode.call(this, 'Buffer');
+
   this.variable = variable;
   this.length = length;
 }
+util.inherits(Buffer, ASTNode);
 
 Object.defineProperties(Buffer.prototype, {
   type: {
@@ -366,7 +453,7 @@ Object.defineProperties(Buffer.prototype, {
 });
 
 Buffer.prototype.toString = function () {
-  return 'Buffer ' + this.length + ' (' + this.variable.toString() + ')';
+  return this.stringBuilder([this.length, this.variable]);
 };
 
 Buffer.prototype.transformChildren = function (transformer) {
@@ -377,17 +464,15 @@ Buffer.prototype.transformChildren = function (transformer) {
  * A variable
  */
 function Variable (name, type) {
-  this.nodeType = 'Variable';
+  ASTNode.call(this, 'Variable');
+
   this.name = name;
   this.type = type ? type : Empty;
 }
+util.inherits(Variable, ASTNode);
 
 Variable.prototype.toString = function () {
-  if (this.type && this.type !== Empty) {
-    return 'Variable ' + this.type + ' (' + this.name + ')';
-  } else {
-    return 'Variable (' + this.name + ')';
-  }
+  return this.stringBuilder([this.type], { '': this.name });
 };
 
 Variable.prototype.transformChildren = function (transformer) {
@@ -404,9 +489,11 @@ Variable.prototype.transformChildren = function (transformer) {
  *  - map { start, end } for type range
  */
 function Type (type) {
-  this.nodeType = 'Type';
+  ASTNode.call(this, 'Type');
+
   this.type = type;
 }
+util.inherits(Type, ASTNode);
 
 Type.prototype.toString = function () {
   return '[Type ' + this.type + ']';
@@ -426,15 +513,17 @@ Type.prototype.transformChildren = function () {
  *  - map { start, end } for type range
  */
 function Literal (value, type) {
+  ASTNode.call(this, 'Literal');
+
   // Types should always be stored as Dys.Type objects
   if (typeof type === 'string') {
     type = new Type(type);
   }
 
-  this.nodeType = 'Literal';
   this.type = type;
   this.value = value;
 }
+util.inherits(Literal, ASTNode);
 
 Literal.prototype.toString = function () {
   var val;
@@ -444,7 +533,8 @@ Literal.prototype.toString = function () {
     default:
       val = '' + this.value;
   }
-  return 'Literal ' + this.type + ' (' + val + ')';
+
+  return this.stringBuilder([this.type], { '': val });
 };
 
 Literal.prototype.transformChildren = function () {

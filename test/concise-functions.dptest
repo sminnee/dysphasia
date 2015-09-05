@@ -66,18 +66,16 @@ File ([
   ]
   statements: [
     IfBlock (
-    test:
-      Op [Type bool] (>=
-        Variable (x)
-        Literal [Type int] (10)
-      )
+    test: Op [Type bool] (>=
+      Variable (x)
+      Literal [Type int] (10)
+    )
     pass: [
       ReturnStatement (Op (*
         Variable (x)
         Literal [Type int] (3)
       ))
-    ]
-    fail: Empty)
+    ])
     ReturnStatement (Op (*
       Variable (x)
       Literal [Type int] (2)
@@ -89,18 +87,16 @@ File ([
   ]
   statements: [
     IfBlock (
-    test:
-      Op [Type bool] (<
-        Variable (y)
-        Literal [Type int] (5)
-      )
+    test: Op [Type bool] (<
+      Variable (y)
+      Literal [Type int] (5)
+    )
     pass: [
       ReturnStatement (Op (+
         Variable (y)
         Literal [Type int] (1)
       ))
-    ]
-    fail: Empty)
+    ])
     ReturnStatement (Op (+
       Variable (y)
       Literal [Type int] (2)

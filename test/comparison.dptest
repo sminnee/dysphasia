@@ -53,70 +53,59 @@ define i32 @main() {
 ------
 File ([
   FnDef main (
-  args: Empty
   statements: [
     IfBlock (
-    test:
-      Op [Type bool] (>=
+    test: Op [Type bool] (>=
+      Literal [Type int] (1)
+      Literal [Type int] (2)
+    )
+    pass: [
+      ReturnStatement (Literal [Type int] (1))
+    ])
+    IfBlock (
+    test: Op [Type bool] (&&
+      Op [Type bool] (<=
         Literal [Type int] (1)
         Literal [Type int] (2)
       )
-    pass: [
-      ReturnStatement (Literal [Type int] (1))
-    ]
-    fail: Empty)
-    IfBlock (
-    test:
-      Op [Type bool] (&&
-        Op [Type bool] (<=
-          Literal [Type int] (1)
-          Literal [Type int] (2)
-        )
-        Literal [Type bool] (false)
-      )
+      Literal [Type bool] (false)
+    )
     pass: [
       ReturnStatement (Literal [Type int] (2))
-    ]
-    fail: Empty)
+    ])
     IfBlock (
-    test:
-      Op [Type bool] (||
-        Op [Type bool] (<
-          Literal [Type int] (1)
-          Literal [Type int] (2)
-        )
-        Op [Type bool] (!=
-          Literal [Type int] (3)
-          Literal [Type int] (4)
-        )
+    test: Op [Type bool] (||
+      Op [Type bool] (<
+        Literal [Type int] (1)
+        Literal [Type int] (2)
       )
+      Op [Type bool] (!=
+        Literal [Type int] (3)
+        Literal [Type int] (4)
+      )
+    )
     pass: [
       ReturnStatement (Literal [Type int] (3))
-    ]
-    fail: Empty)
+    ])
     IfBlock (
-    test:
-      Op [Type bool] (>
-        Op (+
-          Literal [Type int] (5)
-          Op (*
-            Literal [Type int] (3)
-            Literal [Type int] (2)
-          )
+    test: Op [Type bool] (>
+      Op (+
+        Literal [Type int] (5)
+        Op (*
+          Literal [Type int] (3)
+          Literal [Type int] (2)
         )
-        Literal [Type int] (8)
       )
+      Literal [Type int] (8)
+    )
     pass: [
       ReturnStatement (Literal [Type int] (4))
-    ]
-    fail: Empty)
+    ])
     IfBlock (
-    test:
-      Literal [Type bool] (true)
+    test: Literal [Type bool] (true)
     pass: [
       ReturnStatement (Literal [Type int] (5))
-    ]
-    fail: Empty)
+    ])
     ReturnStatement (Literal [Type int] (6))
   ])
 ])

@@ -20,7 +20,6 @@ define i32 @timesTwo(i32 %x) {
 ------
 File ([
   FnDef main (
-  args: Empty
   statements: [
     ReturnStatement [Type int] (Op [Type int] (+
       Literal [Type int] (3)

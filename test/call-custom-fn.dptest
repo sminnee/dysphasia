@@ -51,17 +51,14 @@ File ([
     [Type string]
   ])
   FnDef main (
-  args: Empty
   statements: [
-    VariableDeclaration ([Type int], Variable (x))
+    VariableDeclaration [Type int] (Variable (x))
     ForLoop (
-    variable:
-      Variable (x)
-    loopSource:
-      Literal [Type range] (
-        Literal [Type int] (1)
-        Literal [Type int] (5)
-      )
+    variable: Variable (x)
+    loopSource: Literal [Type range] (
+      Literal [Type int] (1)
+      Literal [Type int] (5)
+    )
     statements: [
       FnCall displayNumber ([
         Variable (x)

@@ -35,7 +35,6 @@ File ([
     [Type string]
   ])
   FnDef main (
-  args: Empty
   statements: [
     FnCall puts ([
       Literal [Type string] (hello world)

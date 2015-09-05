@@ -17,7 +17,6 @@ File ([
     [Type string]
   ])
   FnDef main (
-  args: Empty
   statements: [
     ReturnStatement (Literal [Type int] (0))
   ])
