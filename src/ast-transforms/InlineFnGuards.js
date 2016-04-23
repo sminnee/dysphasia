@@ -37,7 +37,6 @@ InlineFnGuards.prototype.handleFnDef = function (ast) {
   if (fn) {
     fn.statements = fn.statements.concat(ast.statements);
     return Dys.Empty;
-
   }
 
   // First declaration of a new function

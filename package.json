@@ -6,9 +6,9 @@
     "dys": "./main.js"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha && ./node_modules/.bin/semistandard",
-    "coverage": "./node_modules/.bin/istanbul cover --report lcov ./node_modules/.bin/_mocha && ./node_modules/.bin/semistandard",
-    "build": "node_modules/.bin/pegjs src/parser/parser.pegjs src/parser/parser.js"
+    "test": "mocha && eslint src/ test/",
+    "coverage": "istanbul cover --report lcov ./node_modules/.bin/_mocha && eslint",
+    "build": "pegjs src/parser/parser.pegjs src/parser/parser.js"
   },
   "author": "",
   "license": "BSD",
@@ -19,6 +19,11 @@
   },
   "devDependencies": {
     "codeclimate-test-reporter": "^0.1.0",
+    "eslint": "^2.8.0",
+    "eslint-config-semistandard": "^6.0.1",
+    "eslint-config-standard": "^5.1.0",
+    "eslint-plugin-promise": "^1.1.0",
+    "eslint-plugin-standard": "^1.3.2",
     "istanbul": "^0.3.17",
     "mocha": "^2.2.5",
     "semistandard": "^7.0.2"

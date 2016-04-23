@@ -35,10 +35,12 @@ StrConcatToCLibrary.prototype.handleStrConcat = function (ast) {
     if (item.type && item.type.type === 'string' && item.nodeType === 'Literal') {
       snprintfArgs[2].value += item.value;
 
+    // Insert the placeholder of the type we're using
     } else if (item.type && formatMap[item.type.type]) {
       snprintfArgs[2].value += formatMap[item.type.type];
       snprintfArgs.push(item);
 
+    // Embedding this type isn't supported yet
     } else {
       throw new SyntaxError('Can\'t embed in string: ' + JSON.stringify(item));
     }
