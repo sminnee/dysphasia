@@ -13,7 +13,7 @@ File ([
   UseStatement puts ([
     [Type string]
   ])
-  FnDef main (
+  FnDef [Type int] main (
   statements: [
     ForLoop (
     variable: Variable [Type int] (x)

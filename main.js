@@ -77,7 +77,7 @@ function runCli (inputFile, parseCallback, actions) {
 
       if (actions.optimise) {
         fs.writeFileSync(llFile + '.tmp', compiled);
-        execSync(OPT + ' -S ' + llFile + '.tmp -ipsccp -dce -simplifycfg -globalopt > ' + llFile);
+        execSync(OPT + ' -S ' + llFile + '.tmp -ipsccp -dce -simplifycfg -globalopt -indvars > ' + llFile);
         fs.unlinkSync(llFile + '.tmp');
         compiled = fs.readFileSync(llFile);
       }

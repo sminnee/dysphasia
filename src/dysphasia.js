@@ -1,7 +1,7 @@
 var LLVMCompiler = require('./LLVMCompiler');
 var StrConcatToCLibrary = require('./ast-transforms/StrConcatToCLibrary');
 var InferTypes = require('./ast-transforms/InferTypes');
-var GetFnDefs = require('./ast-transforms/GetFnDefs');
+// var GetFnDefs = require('./ast-transforms/GetFnDefs');
 var InlineFnGuards = require('./ast-transforms/InlineFnGuards');
 
 function DysphasiaFile (input) {
@@ -19,11 +19,10 @@ DysphasiaFile.prototype.generateLLVMCode = function () {
 
   // AST transformations
   ast = (new InlineFnGuards()).handle(ast);
-  var fnDefs = (new GetFnDefs()).handle(ast);
-  ast = (new InferTypes(fnDefs)).handle(ast);
+  ast = (new InferTypes()).handle(ast);
   ast = (new StrConcatToCLibrary()).handle(ast);
 
-  return (new LLVMCompiler(fnDefs)).handle(ast);
+  return (new LLVMCompiler()).handle(ast);
 };
 
 var Dysphasia = {

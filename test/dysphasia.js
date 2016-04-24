@@ -6,7 +6,6 @@ var fs = require('fs');
 
 var InlineFnGuards = require('../src/ast-transforms/InlineFnGuards');
 var InferTypes = require('../src/ast-transforms/InferTypes');
-var GetFnDefs = require('../src/ast-transforms/GetFnDefs');
 
 describe('Dysphasia', function () {
   it('supports if statements', function () {
@@ -21,7 +20,7 @@ describe('Dysphasia', function () {
     testIntermediateCode('test/comparison.dptest');
   });
   it('supports use and puts', function () {
-    testAST('test/use-puts.dptest');
+    testASTTransform('test/use-puts.dptest', [new InferTypes()]);
     testIntermediateCode('test/use-puts.dptest');
   });
   it('supports for loops without a bound variable', function () {
@@ -32,7 +31,7 @@ describe('Dysphasia', function () {
     testIntermediateCode('test/for-loop-with-variable.dptest');
   });
   it('supports for loops iterating an array', function () {
-    testAST('test/for-loop-array.dptest');
+    testASTTransform('test/for-loop-array.dptest', [new InferTypes()]);
     testIntermediateCode('test/for-loop-array.dptest');
   });
   it('supports comments', function () {
@@ -80,8 +79,7 @@ function testASTInferredTypes (filename) {
   var dp = Dysphasia.loadString(parts.source);
   var ast = dp.parseTree();
 
-  var fnDefs = (new GetFnDefs()).handle(ast);
-  ast = (new InferTypes(fnDefs)).handle(ast);
+  ast = (new InferTypes()).handle(ast);
 
   assert.equal(ast.toString(), parts.ast.replace(/\s+$/, ''));
 }

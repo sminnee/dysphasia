@@ -9,7 +9,7 @@ var util = require('util');
  * @param string nodeType Name of the node type
  */
 function ASTNode (nodeType) {
-  this.nodeType = nodeType ? nodeType : 'Empty';
+  this.nodeType = nodeType || 'Empty';
 }
 
 /**
@@ -62,6 +62,28 @@ ASTNode.prototype.stringBuilder = function (inlineItems, childItems) {
 };
 
 /**
+ * Combine two nodes. By default, only works if 1 is empty or the two nodes are equal.
+ * May be overridden for more sophisticated combination semantics
+ * @param  ASTNode other
+ * @return ASTNode
+ */
+ASTNode.prototype.combine = function (other) {
+  if (other.isEmpty()) return this;
+  if (this.equals(other)) return this;
+
+  throw new SyntaxError('Can\'t combine ' + this.toString() + ' with ' + other.toString());
+};
+
+/**
+ * Return true if the two elements are of equal value
+ * @param  ASTNode other The node to compare
+ * @return true
+ */
+ASTNode.prototype.equals = function (other) {
+  return this.toString() === other.toString();
+};
+
+/**
  * Intends a string value by 2 spaces
  */
 function indent (str) {
@@ -105,11 +127,23 @@ Empty.toString = function () {
 Empty.transformChildren = function (transformer) {
   return this;
 };
+Empty.combine = function (other) {
+  if (!other.nodeType) throw new SyntaxError("Can't combined with a non-AST-node");
+  return other;
+};
+Empty.mapList = function () {
+  return Empty;
+};
+Empty.map = function () {
+  return Empty;
+};
 
 /**
  * A Dysphasia file
  */
 function File (statements) {
+  if (!statements.nodeType) throw new Error('File statements must be an AST node');
+
   ASTNode.call(this, 'File');
   this.nodeType = 'File';
   this.statements = statements;
@@ -121,7 +155,7 @@ File.prototype.toString = function () {
 };
 
 File.prototype.transformChildren = function (transformer) {
-  return new File(transformer(this.statements));
+  return new File(transformer(this.statements).flatten());
 };
 
 /**
@@ -167,11 +201,24 @@ List.prototype.toString = function () {
 };
 
 List.prototype.transformChildren = function (transformer) {
-  return new List(this.items.map(transformer));
+  return this.mapList(transformer);
+};
+
+List.prototype.equals = function (other) {
+  if (this.length !== other.length) return false;
+  if (this.nodeType !== other.nodeType) return false;
+
+  var diffCheck = Math.min.apply(Math, this.items.map(function (val, i) {
+    return val.equals(other.items[i]) ? 1 : 0;
+  }));
+  return diffCheck === 1;
 };
 
 List.prototype.map = function (callback) {
   return this.items.map(callback);
+};
+List.prototype.mapList = function (callback) {
+  return new List(this.items.map(callback));
 };
 
 List.prototype.forEach = function (callback) {
@@ -181,11 +228,19 @@ List.prototype.forEach = function (callback) {
 List.prototype.concat = function (extra) {
   if (extra.nodeType === 'List') {
     return new List(this.items.concat(extra.items));
-
   } else {
     validateItems(extra, true);
     return new List(this.items.concat(extra));
   }
+};
+
+/**
+ * Return a new list where any nested List items are flattened
+ */
+List.prototype.flatten = function() {
+  return this.items.reduce(function (list, next) {
+    return list.concat(next);
+  }, new List());
 };
 
 /**
@@ -199,6 +254,14 @@ function UseStatement (name, type, args, varArgs) {
   this.varArgs = varArgs;
 }
 util.inherits(UseStatement, ASTNode);
+
+Object.defineProperties(UseStatement.prototype, {
+  signature: {
+    get: function () {
+      return new UseStatement(Empty, this.type, this.args, this.varArgs);
+    }
+  }
+});
 
 UseStatement.prototype.toString = function () {
   return this.stringBuilder([
@@ -214,6 +277,23 @@ UseStatement.prototype.transformChildren = function (transformer) {
   return new UseStatement(this.name, transformer(this.type), transformer(this.args), this.varArgs);
 };
 
+UseStatement.prototype.equals = function (other) {
+  return this.name === other.name &&
+    this.type.equals(other.type) &&
+    this.args.equals(other.args) &&
+    this.varArgs === other.varArgs;
+};
+
+UseStatement.prototype.combine = function (other) {
+  if (!this.type) throw new SyntaxError('RAR: ' + this.toString());
+  return new UseStatement(
+    this.name,
+    this.type.combine(other.type),
+    this.args.combine(other.args),
+    this.varArgs
+  );
+};
+
 /**
  * A function definition
  */
@@ -226,6 +306,14 @@ function FnDef (name, type, args, guard, statements) {
   this.statements = statements;
 }
 util.inherits(FnDef, ASTNode);
+
+Object.defineProperties(FnDef.prototype, {
+  signature: {
+    get: function () {
+      return new UseStatement(null, this.type, this.args.mapList(function (arg) { return arg.type; }), false);
+    }
+  }
+});
 
 FnDef.prototype.toString = function () {
   return this.stringBuilder(
@@ -297,16 +385,34 @@ function FnCall (name, args) {
   ASTNode.call(this, 'FnCall');
   this.name = name;
   this.args = args;
+  this.signature = Empty;
   this.type = Empty;
 }
 util.inherits(FnCall, ASTNode);
 
 FnCall.prototype.toString = function () {
-  return this.stringBuilder([this.type, this.name], { '': this.args });
+  return this.stringBuilder([this.type, this.name], { '': this.args, 'signature': this.signature });
 };
 
 FnCall.prototype.transformChildren = function (transformer) {
-  return new FnCall(this.name, transformer(this.args));
+  var args = transformer(this.args);
+  var prefix = [];
+  args = args.mapList(function (arg) {
+    // If transformer turned an argument into a list, then pull all but the last item as a prefix to this FnCall
+    if (arg.nodeType === 'List') {
+      prefix.push.apply(prefix, arg.items.slice(0, -1));
+      return arg.last;
+    }
+    return arg;
+  });
+
+  // If there is a prefix, return a list
+  var fnCall = new FnCall(this.name, args);
+  if (prefix.length > 0) {
+    prefix.push(fnCall);
+    return new List(prefix);
+  }
+  return fnCall;
 };
 
 /**
@@ -315,7 +421,7 @@ FnCall.prototype.transformChildren = function (transformer) {
 function ReturnStatement (expression, type) {
   ASTNode.call(this, 'ReturnStatement');
   this.expression = expression;
-  this.type = type ? type : Empty;
+  this.type = type || Empty;
 }
 util.inherits(ReturnStatement, ASTNode);
 
@@ -363,7 +469,7 @@ function Op (op, left, right, type) {
   this.op = op;
   this.left = left;
   this.right = right;
-  this.type = type ? type : Empty;
+  this.type = type || Empty;
 }
 util.inherits(Op, ASTNode);
 
@@ -386,7 +492,7 @@ function StrConcat (left, right) {
 
   validateItem(left, 'StrConcat');
 
-  // Left and Right may be StrContact options too
+  // Left and Right may be StrConcat options too
   if (left.nodeType === 'StrConcat') {
     this.items = left.items;
   } else if (left.nodeType === 'List') {
@@ -467,7 +573,7 @@ function Variable (name, type) {
   ASTNode.call(this, 'Variable');
 
   this.name = name;
-  this.type = type ? type : Empty;
+  this.type = type || Empty;
 }
 util.inherits(Variable, ASTNode);
 
@@ -477,6 +583,15 @@ Variable.prototype.toString = function () {
 
 Variable.prototype.transformChildren = function (transformer) {
   return new Variable(this.name, transformer(this.type));
+};
+
+Variable.prototype.equals = function (other) {
+  return this.nodeType === other.nodeType && this.name === other.name && this.type.equals(other.type);
+};
+
+Variable.prototype.combine = function (other) {
+  if (this.type.equals(other.type)) return this;
+  throw new SyntaxError('Can\'t combine ' + this.toString() + ' with ' + other.toString());
 };
 
 /**
@@ -496,6 +611,10 @@ Type.prototype.toString = function () {
 
 Type.prototype.transformChildren = function () {
   return this;
+};
+
+Type.prototype.equals = function (other) {
+  return this.nodeType === other.nodeType && this.type === other.type;
 };
 
 /**

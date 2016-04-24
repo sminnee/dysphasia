@@ -8,9 +8,8 @@ var ASTBuilder = require('./ASTBuilder');
 /**
  * LLVM IR generator
  */
-function LLVMCompiler (fnDefs) {
+function LLVMCompiler () {
   this.builder = new ASTBuilder();
-  this.fnDefs = fnDefs;
 }
 
 LLVMCompiler.prototype.generateLLVMCode = function (ast) {
@@ -28,13 +27,6 @@ LLVMCompiler.prototype.forMethod = function () {
   l.getFnDef = function (name) { return self.getFnDef(name); };
   l.argSpecFromFnDef = function (fnDef, argCallback) { return self.argSpecFromFnDef(fnDef, argCallback); };
   return l;
-};
-
-/**
- * Return a function definition for the given name
- */
-LLVMCompiler.prototype.getFnDef = function (name) {
-  return this.fnDefs[name];
 };
 
 LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef, argCallback) {
@@ -73,7 +65,6 @@ LLVMCompiler.prototype.handle = function (ast) {
       throw new Error('LLVMCompiler.handle' + ast.nodeType + ' didn\'t return a value');
     }
     return result;
-
   } else {
     throw new Error('LLVMCompiler.handle' + ast.nodeType + '() not defined.');
   }
@@ -98,9 +89,6 @@ LLVMCompiler.prototype.handleList = function (ast) {
  * Use statement
  */
 LLVMCompiler.prototype.handleUseStatement = function (ast) {
-  // Log the fnDef for those who call it
-  this.fnDefs[ast.name] = ast;
-
   // Process args adding flags to pointer type
   var argList = this.argSpecFromFnDef(ast, function (arg, type) {
     return (type.match(/\*$/) ? (type + ' noalias nocapture') : type);
@@ -247,34 +235,42 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
 LLVMCompiler.prototype.handleFnCall = function (ast) {
   var llvm = this;
 
-  // Get the function definition
-  var fnDef = this.getFnDef(ast.name);
-  if (!fnDef) {
-    throw new SyntaxError('Can\'t find function ' + ast.name);
-  }
+  var fnDef = ast;
+  var fArgs;
 
-  // Cast arguments as needed
-  var fArgs = ast.args.map(function (argAst, i) {
-    // Validate source
-    if (!argAst.nodeType) {
-      throw new SyntaxError('Bad argument AST: ' + argAst);
-    }
+  // Parse a signature (needed for string conversion and var args)
+  if (!ast.signature.isEmpty()) {
+    fnDef = ast.signature;
 
-    // expectType not set for varArgs
-    var expectedType = fnDef.args.items[i] ? llvm.handle(fnDef.args.items[i]).type : null;
-    var arg = llvm.handle(argAst);
-    if (expectedType && arg.type !== expectedType) {
-      // Cast i8 const array as i8* pointer
-      if (expectedType === 'i8*' && arg.type.match(/^\[[0-9]+ x i8\]/)) {
-        return arg.addExpression('i8*', 'getelementptr ' + arg.type + '* ' + arg.value + ', i64 0, i64 0');
-      } else {
-        throw new SyntaxError('Can\'t cast "' + arg.type.toString() + ' to "' + expectedType + '" (arg ' +
-          (i + 1) + ' of ' + ast.name + ')');
+    // Cast arguments as needed
+    fArgs = ast.args.map(function (argAst, i) {
+      // Validate source
+      if (!argAst.nodeType) {
+        throw new SyntaxError('Bad argument AST: ' + argAst);
       }
-    } else {
-      return arg;
-    }
-  });
+
+      // expectType not set for varArgs
+      var expectedType = fnDef.args.items[i] ? llvm.handle(fnDef.args.items[i]).type : null;
+      var arg = llvm.handle(argAst);
+      if (expectedType && arg.type !== expectedType) {
+        // Cast i8 const array as i8* pointer
+        if (expectedType === 'i8*' && arg.type.match(/^\[[0-9]+ x i8\]/)) {
+          return arg.addExpression('i8*', 'getelementptr ' + arg.type + '* ' + arg.value + ', i64 0, i64 0');
+        } else {
+          throw new SyntaxError('Can\'t cast "' + arg.type.toString() + ' to "' + expectedType + '" (arg ' +
+            (i + 1) + ' of ' + ast.name + ')');
+        }
+      } else {
+        return arg;
+      }
+    });
+
+  // Simply pass the arguments in
+  } else {
+    fArgs = ast.args.map(function (argAst) {
+      return llvm.handle(argAst);
+    });
+  }
 
   var fnArgSpec = '(' + this.argSpecFromFnDef(fnDef) + ')*';
 

@@ -18,8 +18,7 @@ define i32 @main() {
     %i = phi i32 [ 0, %Entry ], [ %nextvar, %Loop ]
     %ptr = getelementptr inbounds [5 x i32]* @str, i32 0, i32 %i
     %x = load i32* %ptr
-  %var = getelementptr [8 x i8]* @str2, i64 0, i64 0
-  %var2 = call i32 (i8*, ...)* @printf(i8* %var, i32 %x)
+  %var = call i32 (i8*, i32)* @printf([8 x i8] @str2, i32 %x)
   %nextvar = add i32 %i, 1
   %break = icmp ugt i32 %nextvar, 4
   br i1 %break, label %Continue, label %Loop
@@ -28,15 +27,16 @@ define i32 @main() {
 }
 
 ------
+
+------
 File ([
   UseStatement printf var_args ([
     [Type string]
   ])
-  FnDef main (
+  FnDef [Type int] main (
   statements: [
-    VariableDeclaration [Type int] (Variable (x))
     ForLoop (
-    variable: Variable (x)
+    variable: Variable [Type int] (x)
     loopSource: Literal [Type array] ([
       Literal [Type int] (1)
       Literal [Type int] (4)
@@ -48,9 +48,12 @@ File ([
       FnCall printf ([
         Literal [Type string] (x = %i
         )
-        Variable (x)
-      ])
+        Variable [Type int] (x)
+      ]
+      signature: UseStatement var_args ([
+        [Type string]
+      ]))
     ])
-    ReturnStatement (Literal [Type int] (0))
+    ReturnStatement [Type int] (Literal [Type int] (0))
   ])
 ])

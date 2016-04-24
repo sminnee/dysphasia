@@ -50,11 +50,15 @@ StrConcatToCLibrary.prototype.handleStrConcat = function (ast) {
   // new Dys.UseStatement('snprintf', new Dys.List([ new Dys.Type('buffer'), new Dys.Type('string'), ]))
 
   // Rewrite as AST: Call snprintf, populating the myVar variable and then return that variable
-  var newAST = new Dys.List([
-    new Dys.FnCall('snprintf', snprintfArgs),
-    buffer.variable
-  ]);
+  var fnCall = new Dys.FnCall('snprintf', snprintfArgs);
+  fnCall.signature = new Dys.UseStatement(
+    null, new Dys.Type('int'),
+    new Dys.List([ new Dys.Type('buffer'), new Dys.Type('int'), new Dys.Type('string') ], true),
+    true
+  );
 
+  // Return 2 items, the latter will be used as the variable
+  var newAST = new Dys.List([ fnCall, buffer.variable ]);
   return newAST;
 };
 

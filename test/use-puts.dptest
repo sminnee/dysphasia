@@ -14,12 +14,12 @@ declare i32 @snprintf(i8* noalias nocapture, i32, i8* noalias nocapture, ...) no
 @str = private unnamed_addr constant [12 x i8] c"hello world\00"
 @str2 = private unnamed_addr constant [20 x i8] c"I can see %i things\00"
 define i32 @main() {
-  %var = getelementptr [12 x i8]* @str, i64 0, i64 0
-  %var2 = call i32 (i8*)* @puts(i8* %var)
-  %var3 = getelementptr [20 x i8]* @str2, i64 0, i64 0
-  %var4 = call i32 (i8*, ...)* @printf(i8* %var3, i32 5)
+  %var = call i32 (i8*)* @puts([12 x i8] @str)
+  %var2 = call i32 (i8*, i32)* @printf([20 x i8] @str2, i32 5)
   ret i32 0
 }
+
+------
 
 ------
 File ([
@@ -34,7 +34,7 @@ File ([
     [Type int]
     [Type string]
   ])
-  FnDef main (
+  FnDef [Type int] main (
   statements: [
     FnCall puts ([
       Literal [Type string] (hello world)
@@ -42,7 +42,10 @@ File ([
     FnCall printf ([
       Literal [Type string] (I can see %i things)
       Literal [Type int] (5)
-    ])
-    ReturnStatement (Literal [Type int] (0))
+    ]
+    signature: UseStatement var_args ([
+      [Type string]
+    ]))
+    ReturnStatement [Type int] (Literal [Type int] (0))
   ])
 ])

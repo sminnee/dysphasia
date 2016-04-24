@@ -281,11 +281,7 @@ arrayItems
 useStatement
   = use ws type:(type ws)? name:symbolname semicolon? lparenth args:useStatementParams rparenth semicolon?
     {
-      if(args && args.varArgs) {
-        return new Dys.UseStatement(name, type ? type[0] : Dys.Empty, args.types, true);
-      } else {
-        return new Dys.UseStatement(name, type ? type[0] : Dys.Empty, args, false);
-      }
+      return new Dys.UseStatement(name, type ? type[0] : Dys.Empty, args.types, args.varArgs);
     }
 
 useStatementParams
@@ -293,7 +289,10 @@ useStatementParams
     {
       return { varArgs: true, types: types }
     }
-  / typeList
+  / types:typeList
+    {
+      return { varArgs: false, types: types }
+    }
 
 typeList
   = left:type comma rest:typeList

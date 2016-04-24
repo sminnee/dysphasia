@@ -1,7 +1,8 @@
 main {
 	return 3 + 4 * 2 + timesTwo(5);
 }
-int timesTwo(int x) {
+// Type is inferred as int because int is passwd to it above
+timesTwo(x) {
     return x * 2;
 }
 ------
@@ -19,7 +20,7 @@ define i32 @timesTwo(i32 %x) {
 
 ------
 File ([
-  FnDef main (
+  FnDef [Type int] main (
   statements: [
     ReturnStatement [Type int] (Op [Type int] (+
       Literal [Type int] (3)
