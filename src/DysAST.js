@@ -412,6 +412,14 @@ FnCall.prototype.transformChildren = function (transformer) {
     prefix.push(fnCall);
     return new List(prefix);
   }
+
+  if (!this.type.isEmpty()) {
+    fnCall.type = transformer(this.type);
+  }
+  if (!this.signature.isEmpty()) {
+    fnCall.signature = transformer(this.signature);
+  }
+
   return fnCall;
 };
 

@@ -18,7 +18,8 @@ define i32 @main() {
     %i = phi i32 [ 0, %Entry ], [ %nextvar, %Loop ]
     %ptr = getelementptr inbounds [5 x i32]* @str, i32 0, i32 %i
     %x = load i32* %ptr
-  %var = call i32 (i8*, i32)* @printf([8 x i8] @str2, i32 %x)
+  %var = getelementptr [8 x i8]* @str2, i64 0, i64 0
+  %var2 = call i32 (i8*, ...)* @printf(i8* %var, i32 %x)
   %nextvar = add i32 %i, 1
   %break = icmp ugt i32 %nextvar, 4
   br i1 %break, label %Continue, label %Loop
