@@ -16,25 +16,34 @@ function ASTTransform () {
  */
 ASTTransform.prototype.handle = function (ast) {
   if (!ast.nodeType) {
-    throw new Error('Bad AST passed to handle(): ' + JSON.stringify(ast));
+    throw new Error('Bad AST passed to handle() - no nodeType: ' + JSON.stringify(ast));
   }
+
+  var result;
 
   // transform-specific handler
   if (typeof this['handle' + ast.nodeType] === 'function') {
-    var result = this['handle' + ast.nodeType](ast);
-    if (!result) {
-      throw new Error('ASTTransform.handle' + ast.nodeType + ' didn\'t return a value');
-    }
-    return result;
+    result = this['handle' + ast.nodeType](ast);
 
   // default handler - no-op, but keep traversing the tree
   } else {
-    return this.defaultHandler(ast);
+    result = this.defaultHandler(ast);
   }
+
+  // Validation
+  if (!result) {
+    throw new Error('ASTTransform.handle' + ast.nodeType + ' didn\'t return a value');
+  }
+  if (!result.nodeType) {
+    console.log(result);
+    throw new Error('ASTTransform.handle' + ast.nodeType + ' didn\'t return an AST node');
+  }
+
+  return result;
 };
 
 ASTTransform.prototype.defaultHandler = function (ast) {
-  if (!ast.transformChildren) console.log(ast);
+  if (!ast.transformChildren) throw new Error('No transformChildren() method on ' + ast);
   return ast.transformChildren(this.handle.bind(this));
 };
 

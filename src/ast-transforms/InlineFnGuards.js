@@ -20,6 +20,8 @@ InlineFnGuards.prototype.handleFnDef = function (ast) {
   ast = this.defaultHandler(ast);
 
   // If the last statement isn't a return or a control block, make it a return
+  if (ast.statements.nodeType !== 'List') throw Error('FnDef statements must be a list');
+
   var lastStatement = ast.statements.last;
   switch (lastStatement.nodeType) {
     case 'FnCall': case 'Op': case 'Literal': case 'Variable':

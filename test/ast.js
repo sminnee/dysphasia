@@ -7,7 +7,6 @@ var ASTTransform = require('../src/ast-transforms/ASTTransform');
 
 describe('DysAST', function () {
   it('default transformation does not alter AST', function () {
-
     // Simple test AST that uses all node types
     var input = new Dys.File(
       new Dys.List([

@@ -237,7 +237,7 @@ List.prototype.concat = function (extra) {
 /**
  * Return a new list where any nested List items are flattened
  */
-List.prototype.flatten = function() {
+List.prototype.flatten = function () {
   return this.items.reduce(function (list, next) {
     return list.concat(next);
   }, new List());

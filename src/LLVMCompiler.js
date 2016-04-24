@@ -37,10 +37,32 @@ LLVMCompiler.prototype.argSpecFromFnDef = function (fnDef, argCallback) {
   }
 
   var argSpec = fnDef.args.map(function (arg) {
-    var type = self.handle(arg).type;
+    var type;
+    switch (arg.nodeType) {
+      case 'Type':
+        type = self.handle(arg).type;
+        break;
+
+      case 'List':
+        console.log(fnDef);
+        console.log(fnDef.args.items);
+        throw Error('Can\'t process a list as an argument');
+
+      case 'Empty':
+        throw Error('Can\'t have an empty arguement');
+
+      default:
+        if (arg.type.nodeType === 'Empty') {
+          console.log(fnDef.toString());
+          throw new Error('Empty argument, can\'t determine argSpec of ' + arg.toString());
+        }
+        type = self.handle(arg.type).type;
+    }
+
     if (argCallback) {
       type = argCallback(arg, type);
     }
+
     return type;
   }).join(', ');
   if (fnDef.varArgs) {
