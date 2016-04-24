@@ -206,7 +206,7 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
     boundVar = this.handle(ast.variable);
     // Simple assignment of the index
     if (loopSource.type === '*range') {
-      boundVar = this.builder.expression(iterator.type, iterator.value, boundVar.value);
+      iterator = boundVar;
 
     // Look up array item
     } else {
