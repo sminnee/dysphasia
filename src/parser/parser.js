@@ -1111,7 +1111,7 @@ module.exports = (function() {
       if (s0 === peg$FAILED) {
         s0 = peg$parsefunctionCall();
         if (s0 === peg$FAILED) {
-          s0 = peg$parseinteger();
+          s0 = peg$parsenumericLiteral();
           if (s0 === peg$FAILED) {
             s0 = peg$parsebool();
             if (s0 === peg$FAILED) {
@@ -1923,9 +1923,9 @@ module.exports = (function() {
     function peg$parsesimpleTypeOrVariable() {
       var s0;
 
-      s0 = peg$parseinteger();
+      s0 = peg$parsefloat();
       if (s0 === peg$FAILED) {
-        s0 = peg$parsefloat();
+        s0 = peg$parseinteger();
         if (s0 === peg$FAILED) {
           s0 = peg$parsestring();
           if (s0 === peg$FAILED) {
@@ -1937,12 +1937,12 @@ module.exports = (function() {
       return s0;
     }
 
-    function peg$parseintegerOrVariable() {
+    function peg$parsenumericLiteral() {
       var s0;
 
-      s0 = peg$parseinteger();
+      s0 = peg$parsefloat();
       if (s0 === peg$FAILED) {
-        s0 = peg$parsevariable();
+        s0 = peg$parseinteger();
       }
 
       return s0;

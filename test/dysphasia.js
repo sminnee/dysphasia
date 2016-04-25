@@ -54,6 +54,12 @@ describe('Dysphasia', function () {
     testAST('test/concise-functions.dptest');
     testASTTransform('test/concise-functions.dptest', [new InlineFnGuards()]);
   });
+  it('infers ambiguous function types by creating multiple functions', function () {
+    testASTTransform('test/infer-ambiguous-types.dptest', [new InferTypes()]);
+  });
+  it('supports floats and ints', function () {
+    testAST('test/floats-and-ints.dptest');
+  });
 });
 
 function testAST (filename) {

@@ -178,7 +178,7 @@ primary
       return subExpr;
     }
   / functionCall
-  / integer
+  / numericLiteral
   / bool
   / variable
 
@@ -336,14 +336,14 @@ variableDeclaration
     }
 
 simpleTypeOrVariable
-  = integer
-  / float
+  = float
+  / integer
   / string
   / variable
 
-integerOrVariable
-  = integer
-  / variable
+numericLiteral
+  = float
+  / integer
 
 string "string"
   = "\"" contents:stringcontent* "\"" ws?

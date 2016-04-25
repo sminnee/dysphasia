@@ -12,6 +12,7 @@ function InferTypes () {
   this.varDefs = {};
   this.fnSignatures = {};
   this.fnTypeHints = {};
+  this.fnRenaming = {};
   this.runAgain = false;
 }
 
@@ -27,14 +28,29 @@ InferTypes.prototype.getVariable = function (name) {
 };
 
 // Provide an arg type hint
+// Returns the function name to use
 InferTypes.prototype.addFnArgTypes = function (name, types) {
-  if (!this.fnTypeHints[name]) {
+  if (this.fnTypeHints[name]) {
+    // Multiple argument signatures detected in the call; generate duplicate implementations of the
+    // function
+    if (!this.fnTypeHints[name].equals(types)) {
+      var typeList = types.map(function (type) { return type.type; }).join('_');
+      var altName = name + '_' + typeList;
+
+      if (!this.fnRenaming[name]) this.fnRenaming[name] = [];
+      this.fnRenaming[name].push(altName);
+      this.fnTypeHints[altName] = types;
+      this.runAgain = true;
+      return altName;
+    }
+  } else {
     if (types.nodeType !== 'List') {
       throw new SyntaxError('addFnArgTypes must be passed a Dys.List node');
     }
     this.fnTypeHints[name] = types;
     this.runAgain = true;
   }
+  return name;
 };
 
 // Provide a return type hint
@@ -103,35 +119,62 @@ InferTypes.prototype.handleOp = function (ast) {
 
 InferTypes.prototype.handleFnDef = function (ast) {
   // Track return types within the function
-  this.returnTypes = [];
-
   var self = this;
-  // TODO: Limit scope only to the function
-  if (ast.args.nodeType === 'List') {
-    ast.args.forEach(function (arg, i) {
-      // Find inferred argument type
-      var inferredType = self.getFnArgType(ast.name, i);
-      if (arg.type.isEmpty()) {
-        arg.type = inferredType;
-      } else {
-        if (arg.type.type !== inferredType.type) {
-          throw new SyntaxError('Can\'t use inferred type ' + inferredType.toString() +
-            '; explicit type set to ' + arg.type.toString());
+
+  function processFnDef (ast) {
+    self.returnTypes = [];
+
+    // Clone to avoid side-effects
+    ast = ast.clone();
+
+    // TODO: Limit scope only to the function
+    if (ast.args.nodeType === 'List') {
+      ast.args.forEach(function (arg, i) {
+        // Find inferred argument type
+        var inferredType = self.getFnArgType(ast.name, i);
+        if (arg.type.isEmpty()) {
+          arg.type = inferredType;
+        } else {
+          if (arg.type.type !== inferredType.type) {
+            throw new SyntaxError('Can\'t use inferred type ' + inferredType.toString() +
+              '; explicit type set to ' + arg.type.toString());
+          }
         }
-      }
-      arg.type = inferredType;
-      self.varDefs[arg.name] = arg.type;
+        arg.type = inferredType;
+        self.varDefs[arg.name] = arg.type;
+      });
+    }
+    var result = self.defaultHandler(ast);
+
+    // Pick the first type
+    // TODO: Check for type uniqueness
+    if (self.returnTypes[0]) {
+      result.type = self.returnTypes[0];
+    }
+
+    self.addFnSignature(result.name, result.signature);
+
+    return result;
+  }
+
+  var result = processFnDef(ast);
+
+  // Duplicate functions if needed
+  if (this.fnRenaming[result.name] && this.fnRenaming[result.name].length) {
+    var originalName = result.name;
+
+    result = new Dys.List([result]);
+
+    this.fnRenaming[originalName].forEach(function (rename) {
+      var derivedAst = ast.clone();
+      derivedAst.name = rename;
+      var derivedFn = processFnDef(derivedAst);
+      result.items.push(derivedFn);
+      this.runAgain = true;
     });
-  }
-  var result = this.defaultHandler(ast);
 
-  // Pick the first type
-  // TODO: Check for type uniqueness
-  if (this.returnTypes[0]) {
-    result.type = this.returnTypes[0];
+    this.fnRenaming[originalName] = [];
   }
-
-  this.addFnSignature(result.name, result.signature);
 
   return result;
 };
@@ -141,7 +184,7 @@ InferTypes.prototype.handleFnCall = function (ast) {
 
   // Provide type hints for Fn defs
   var argTypes = result.args.mapList(function (arg) { return arg.type; });
-  this.addFnArgTypes(result.name, argTypes);
+  result.name = this.addFnArgTypes(result.name, argTypes);
 
   var signature = this.getFnSignature(result.name);
   if (!signature.isEmpty()) {

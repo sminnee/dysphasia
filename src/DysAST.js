@@ -20,6 +20,10 @@ ASTNode.prototype.isEmpty = function () {
   return this.nodeType === 'Empty';
 };
 
+ASTNode.prototype.clone = function () {
+  return this.transformChildren(function (ast) { return ast.clone(); });
+};
+
 /**
  * Build a string representation of the given node.
  * Helper method for toString().
