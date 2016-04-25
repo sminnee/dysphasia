@@ -110,6 +110,7 @@ statement
   / forLoop
   / returnStatement
   / variableDeclaration
+  / variableAssignment
   / expression
 
 returnStatement
@@ -274,6 +275,13 @@ arrayItems
 /**
  * Variables
  */
+
+variableAssignment
+  = variable:variable assign exp:assignmentExpression { return new Dys.Assignment(variable, exp); }
+
+assignmentExpression
+  = expression
+  / arrayExpression
 
 /**
  * Function imports (use)
@@ -459,6 +467,9 @@ and "&&"
   = val:"&&" ws? { return val; }
 or "||"
   = val:"||" ws? { return val; }
+
+assign "="
+  = val:"=" ws? { return val; }
 
 /**
  * Whitespace

@@ -20,7 +20,10 @@ util.inherits(InferTypes, ASTTransform);
 
 // TODO: this shouldn't be needed
 InferTypes.prototype.declareVariable = function (name, type) {
-  this.varDefs[name] = new Dys.Type(type);
+  if (!this.varDefs[name]) {
+    this.varDefs[name] = new Dys.Type(type);
+    this.runAgain = true;
+  }
 };
 
 InferTypes.prototype.getVariable = function (name) {
@@ -215,12 +218,30 @@ InferTypes.prototype.handleVariableDeclaration = function (ast) {
   return Dys.Empty;
 };
 
+InferTypes.prototype.handleAssignment = function (ast) {
+  // Ensure that expression type is bubbles
+  if (ast.type.isEmpty() && !ast.expression.type.isEmpty()) {
+    ast.type = ast.expression.type;
+    this.runAgain = true;
+  }
+
+  // Declare the type of the assigned bubble
+  if (!ast.type.isEmpty()) {
+    this.declareVariable(ast.variable.name, ast.type.type);
+  }
+
+  return this.defaultHandler(ast);
+};
+
 InferTypes.prototype.handleVariable = function (ast) {
   if (ast.type.isEmpty()) {
     var inferredType = this.getVariable(ast.name);
-    if (!inferredType) throw new SyntaxError('Can\'t infer type for "' + ast.name + '"');
-
-    ast.type = inferredType;
+    if (inferredType) {
+      ast.type = inferredType;
+      this.runAgain = true;
+    } else if (!this.runAgain) {
+      throw new SyntaxError('Can\'t infer type for "' + ast.name + '"');
+    }
   }
 
   return this.defaultHandler(ast);

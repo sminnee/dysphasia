@@ -312,6 +312,22 @@ LLVMCompiler.prototype.handleReturnStatement = function (ast) {
 };
 
 /**
+ * Variable assignment
+ */
+LLVMCompiler.prototype.handleAssignment = function (ast) {
+  if (ast.type.isEmpty()) {
+    throw new SyntaxError('Variable without types referneced; has the InferTypes transform executed? ' +
+      ast.toString());
+  }
+
+  // TODO: Check against a local variable registry
+  var llName = '%' + ast.variable.name;
+  var expr = this.handle(ast.expression);
+
+  return expr.addStatement(llName + ' = add ' + expr.type + ' 0 ' + expr.value);
+};
+
+/**
  * Expression
  */
 LLVMCompiler.prototype.handleOp = function (ast) {

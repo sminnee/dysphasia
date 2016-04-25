@@ -15,6 +15,15 @@ describe('Dysphasia', function () {
     testASTInferredTypes('test/arithmetic.dptest');
     testIntermediateCode('test/arithmetic.dptest');
   });
+  it('supports variable assignment', function () {
+    testAST('test/variable-assignment.dptest');
+  });
+  it('supports type inferencing in variable assignment', function () {
+    testASTTransform('test/variable-assignment.dptest', [new InferTypes()]);
+  });
+  it('variable assignments can be compiled', function () {
+    testIntermediateCode('test/variable-assignment.dptest');
+  });
   it('supports comparison operator', function () {
     testAST('test/comparison.dptest');
     testIntermediateCode('test/comparison.dptest');

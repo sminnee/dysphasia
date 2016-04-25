@@ -473,6 +473,27 @@ VariableDeclaration.prototype.transformChildren = function (transformer) {
 };
 
 /**
+ * A variable assigment
+ */
+function Assignment (variable, expression, type) {
+  ASTNode.call(this, 'Assignment');
+
+  this.variable = variable;
+  this.expression = expression;
+  this.type = type || this.expression.type || Empty;
+}
+util.inherits(Assignment, ASTNode);
+
+Assignment.prototype.toString = function () {
+  var typeStr = (this.type.isEmpty()) ? '' : (this.type.toString() + ' ');
+  return 'Assignment ' + typeStr + '(\n' + indent(this.variable.toString() + '\n' + this.expression.toString()) + '\n)';
+};
+
+Assignment.prototype.transformChildren = function (transformer) {
+  return new Assignment(transformer(this.variable), transformer(this.expression), transformer(this.type));
+};
+
+/**
  * A binary operation
  */
 function Op (op, left, right, type) {
@@ -680,6 +701,7 @@ module.exports = {
   FnCall: FnCall,
   ReturnStatement: ReturnStatement,
   VariableDeclaration: VariableDeclaration,
+  Assignment: Assignment,
 
   Op: Op,
   StrConcat: StrConcat,
