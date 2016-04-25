@@ -356,7 +356,8 @@ numericLiteral
 string "string"
   = "\"" contents:stringcontent* "\"" ws?
     {
-      return new Dys.Literal(contents.join(""), 'string');
+      var str = contents.join("");
+      return new Dys.Literal(str, new Dys.Type('string', Dys.Empty, str.length));
     }
 stringcontent
   = "\\\\" { return "\\"; }

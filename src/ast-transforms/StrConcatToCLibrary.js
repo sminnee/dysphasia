@@ -46,6 +46,9 @@ StrConcatToCLibrary.prototype.handleStrConcat = function (ast) {
     }
   });
 
+  // Set type length
+  snprintfArgs[2].type.length = snprintfArgs[2].value.length;
+
   // TODO: Automatically include a 'use' statement for snprintf if it doesn't already exist
   // new Dys.UseStatement('snprintf', new Dys.List([ new Dys.Type('buffer'), new Dys.Type('string'), ]))
 

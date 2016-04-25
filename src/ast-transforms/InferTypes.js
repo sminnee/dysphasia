@@ -263,12 +263,15 @@ InferTypes.prototype.handleLiteral = function (ast) {
     var itemTypes = ast.value.items
       .reduce(function (a, b) { return a.combine(b.type); }, Dys.Empty);
     ast.type.subtype = itemTypes;
+    ast.type.length = ast.value.items.length;
     this.runAgain = true;
   }
 
   // To do: allow for ranges of types other than int
   if (ast.type.type === 'range' && ast.type.subtype.isEmpty()) {
     ast.type.subtype = new Dys.Type('int');
+    ast.type.length = ast.value.end.value - ast.value.start.value + 1;
+    this.runAgain = true;
   }
   return this.defaultHandler(ast);
 };

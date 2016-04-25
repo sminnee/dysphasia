@@ -658,20 +658,24 @@ Variable.prototype.combine = function (other) {
  * @param string type: int, float, string, array or range
  * @param ASTNode subtype: for an array, the type of the items
  */
-function Type (type, subtype) {
+function Type (type, subtype, length) {
   ASTNode.call(this, 'Type');
   this.type = type;
   this.subtype = subtype || Empty;
+  this.length = length || null;
 }
 util.inherits(Type, ASTNode);
 
 Type.prototype.toString = function () {
   if (this.subtype.isEmpty()) return '[Type ' + this.type + ']';
-  else return '[Type ' + this.type + ' ' + this.subtype.toString() + ' ]';
+  else {
+    var lengthSuffix = this.length === null ? '' : ' x ' + this.length;
+    return '[Type ' + this.type + ' ' + this.subtype.toString() + lengthSuffix + ' ]';
+  }
 };
 
 Type.prototype.transformChildren = function (transformer) {
-  return new Type(this.type, transformer(this.subtype));
+  return new Type(this.type, transformer(this.subtype), this.length);
 };
 
 Type.prototype.equals = function (other) {

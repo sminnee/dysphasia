@@ -187,7 +187,8 @@ module.exports = (function() {
         peg$c59 = "\"",
         peg$c60 = { type: "literal", value: "\"", description: "\"\\\"\"" },
         peg$c61 = function(contents) {
-              return new Dys.Literal(contents.join(""), 'string');
+              var str = contents.join("");
+              return new Dys.Literal(str, new Dys.Type('string', Dys.Empty, str.length));
             },
         peg$c62 = "\\\\",
         peg$c63 = { type: "literal", value: "\\\\", description: "\"\\\\\\\\\"" },
