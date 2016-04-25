@@ -6,12 +6,9 @@ main {
 }
 -----
 define i32 @main() {
-  %x = add i32 0 1
-  %var = mul i32 %x, 2
-  %y = add i32 0 %var
-  %var2 = mul i32 %y, %y
-  %z = add i32 0 %var2
-  ret i32 %z
+  %var = mul i32 1, 2
+  %var2 = mul i32 %var, %var
+  ret i32 %var2
 }
 
 -----

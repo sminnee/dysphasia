@@ -10,10 +10,19 @@ var ASTBuilder = require('./ASTBuilder');
  */
 function LLVMCompiler () {
   this.builder = new ASTBuilder();
+  this.variableDefinitions = {};
 }
 
 LLVMCompiler.prototype.generateLLVMCode = function (ast) {
   return this.handle(ast);
+};
+
+LLVMCompiler.prototype.setVariable = function (name, expr) {
+  this.variableDefinitions[name] = expr;
+};
+
+LLVMCompiler.prototype.getVariable = function (name) {
+  return this.variableDefinitions[name];
 };
 
 /**
@@ -324,7 +333,9 @@ LLVMCompiler.prototype.handleAssignment = function (ast) {
   var llName = '%' + ast.variable.name;
   var expr = this.handle(ast.expression);
 
-  return expr.addStatement(llName + ' = add ' + expr.type + ' 0 ' + expr.value);
+  this.setVariable(llName, expr.with({ code: '', globalCode: '' }));
+
+  return expr;
 };
 
 /**
@@ -363,7 +374,7 @@ LLVMCompiler.prototype.handleOp = function (ast) {
 };
 
 /**
- * Represents a buffer that can be loaded by another function call (usually a c-library call)
+ *
  */
 LLVMCompiler.prototype.handleVariable = function (ast) {
   if (ast.type.isEmpty()) {
@@ -371,10 +382,16 @@ LLVMCompiler.prototype.handleVariable = function (ast) {
       ast.toString());
   }
 
-  // TODO: Check against a local variable registry
   var llName = '%' + ast.name;
 
-  return this.builder.literal(this.handle(ast.type).type, llName);
+  var expr = this.getVariable(llName);
+  if (expr) {
+    return expr;
+  } else {
+    var variable = this.handle(ast.type);
+    variable.options.value = llName;
+    return variable;
+  }
 };
 
 /**

@@ -47,6 +47,13 @@ ASTNode.prototype.merge = function (next) {
 };
 
 /**
+ * Create a clone of this node with some options updated
+ */
+ASTNode.prototype.with = function (updates) {
+  return new ASTNode(this.builder, Object.assign({}, this.options, updates));
+};
+
+/**
  * Adds an LLVM statement to the base, clearing the result
  */
 ASTNode.prototype.addStatement = function (statement) {
