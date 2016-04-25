@@ -1,0 +1,24 @@
+use puts(string);
+
+main {
+  puts("Int " + 3 + " and float " + 2.4);
+}
+------
+
+------
+File ([
+  UseStatement puts ([
+    [Type string]
+  ])
+  FnDef main (
+  statements: [
+    FnCall puts ([
+      StrConcat [Type string] ([
+        Literal [Type string] (Int )
+        Literal [Type int] (3)
+        Literal [Type string] ( and float )
+        Literal [Type float] (2.4)
+      ])
+    ])
+  ])
+])

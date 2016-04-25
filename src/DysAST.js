@@ -141,6 +141,31 @@ Empty.mapList = function () {
 Empty.map = function () {
   return Empty;
 };
+Empty.isComplete = function () {
+  return false;
+};
+Object.defineProperties(Empty, {
+  type: {
+    get: function () {
+      return Empty;
+    }
+  },
+  subtype: {
+    get: function () {
+      return Empty;
+    }
+  },
+  variable: {
+    get: function () {
+      return Empty;
+    }
+  },
+  name: {
+    get: function () {
+      return null;
+    }
+  }
+});
 
 /**
  * A Dysphasia file
@@ -364,9 +389,9 @@ IfBlock.prototype.transformChildren = function (transformer) {
  */
 function ForLoop (variable, loopSource, statements) {
   ASTNode.call(this, 'ForLoop');
-  this.variable = variable;
-  this.loopSource = loopSource;
-  this.statements = statements;
+  this.variable = variable || Empty;
+  this.loopSource = loopSource || Empty;
+  this.statements = statements || Empty;
 }
 util.inherits(ForLoop, ASTNode);
 
@@ -631,23 +656,34 @@ Variable.prototype.combine = function (other) {
  * A reference to a type
  *
  * @param string type: int, float, string, array or range
+ * @param ASTNode subtype: for an array, the type of the items
  */
-function Type (type) {
+function Type (type, subtype) {
   ASTNode.call(this, 'Type');
   this.type = type;
+  this.subtype = subtype || Empty;
 }
 util.inherits(Type, ASTNode);
 
 Type.prototype.toString = function () {
-  return '[Type ' + this.type + ']';
+  if (this.subtype.isEmpty()) return '[Type ' + this.type + ']';
+  else return '[Type ' + this.type + ' ' + this.subtype.toString() + ' ]';
 };
 
-Type.prototype.transformChildren = function () {
-  return this;
+Type.prototype.transformChildren = function (transformer) {
+  return new Type(this.type, transformer(this.subtype));
 };
 
 Type.prototype.equals = function (other) {
-  return this.nodeType === other.nodeType && this.type === other.type;
+  return this.nodeType === other.nodeType && this.type === other.type && this.subtype.equals(other.subtype);
+};
+
+/**
+ * Returns true if there are no gaps in the type spec.
+ * An array without a subtype is considered incomplete
+ */
+Type.prototype.isComplete = function () {
+  return (this.type !== 'array' && this.type !== 'range') || this.subtype.isComplete();
 };
 
 /**

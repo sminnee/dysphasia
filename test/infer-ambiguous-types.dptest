@@ -1,0 +1,48 @@
+use puts(string);
+
+main {
+  square(2);
+  square(3.5);
+}
+
+square (x) => return x*x;
+
+------
+
+------
+
+------
+File ([
+  UseStatement puts ([
+    [Type string]
+  ])
+  FnDef main (
+  statements: [
+    FnCall [Type int] square ([
+      Literal [Type int] (2)
+    ])
+    FnCall [Type float] square_float ([
+      Literal [Type float] (3.5)
+    ])
+  ])
+  FnDef [Type int] square (
+  args: [
+    Variable [Type int] (x)
+  ]
+  statements: [
+    ReturnStatement [Type int] (Op [Type int] (*
+      Variable [Type int] (x)
+      Variable [Type int] (x)
+    ))
+  ])
+  FnDef [Type float] square_float (
+  args: [
+    Variable [Type float] (x)
+  ]
+  statements: [
+    ReturnStatement [Type float] (Op [Type float] (*
+      Variable [Type float] (x)
+      Variable [Type float] (x)
+    ))
+  ])
+])

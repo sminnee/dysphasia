@@ -1,0 +1,65 @@
+use puts(string);
+main {
+  x = [1, 4, 9];
+  for(i in x) {
+    puts("Counting " + i);
+  };
+}
+-----
+
+-----
+File ([
+  UseStatement puts ([
+    [Type string]
+  ])
+  FnDef main (
+  statements: [
+    Assignment [Type array] (
+      Variable (x)
+      Literal [Type array] ([
+        Literal [Type int] (1)
+        Literal [Type int] (4)
+        Literal [Type int] (9)
+      ])
+    )
+    ForLoop (
+    variable: Variable (i)
+    loopSource: Variable (x)
+    statements: [
+      FnCall puts ([
+        StrConcat [Type string] ([
+          Literal [Type string] (Counting )
+          Variable (i)
+        ])
+      ])
+    ])
+  ])
+])
+-----
+File ([
+  UseStatement puts ([
+    [Type string]
+  ])
+  FnDef main (
+  statements: [
+    Assignment [Type array [Type int] ] (
+      Variable [Type array [Type int] ] (x)
+      Literal [Type array [Type int] ] ([
+        Literal [Type int] (1)
+        Literal [Type int] (4)
+        Literal [Type int] (9)
+      ])
+    )
+    ForLoop (
+    variable: Variable [Type int] (i)
+    loopSource: Variable [Type array [Type int] ] (x)
+    statements: [
+      FnCall puts ([
+        StrConcat [Type string] ([
+          Literal [Type string] (Counting )
+          Variable [Type int] (i)
+        ])
+      ])
+    ])
+  ])
+])

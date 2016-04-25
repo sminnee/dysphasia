@@ -43,6 +43,12 @@ describe('The Dysphasia language', function () {
     it('can be compiled', function () {
       testIntermediateCode('test/variable-assignment.dptest');
     });
+    it('supports array literals (variable-assignment-array)', function () {
+      testAST('test/variable-assignment-array.dptest');
+    });
+    it('can infer types from the values of array literals (variable-assignment-array)', function () {
+      testASTTransform('test/variable-assignment-array.dptest', [new InferTypes()]);
+    });
   });
 
   describe('String parsing', function () {

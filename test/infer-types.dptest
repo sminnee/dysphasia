@@ -1,6 +1,5 @@
 use puts(string);
 main {
-  int x;
   for(x in 1..5) {
     puts("counting " + x);
   };
@@ -17,7 +16,7 @@ File ([
   statements: [
     ForLoop (
     variable: Variable [Type int] (x)
-    loopSource: Literal [Type range] (
+    loopSource: Literal [Type range [Type int] ] (
       Literal [Type int] (1)
       Literal [Type int] (5)
     )

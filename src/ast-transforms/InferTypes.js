@@ -18,10 +18,17 @@ function InferTypes () {
 
 util.inherits(InferTypes, ASTTransform);
 
-// TODO: this shouldn't be needed
+/**
+ * Indicate the Type of a named variable
+ * @param string name
+ * @param ASTNode type
+ */
 InferTypes.prototype.declareVariable = function (name, type) {
-  if (!this.varDefs[name]) {
-    this.varDefs[name] = new Dys.Type(type);
+  if (!type || !type.isComplete()) {
+    throw new Error('Can\'t declare ' + name + ' to be incomplete type');
+  }
+  if (!this.varDefs[name] || !this.varDefs[name].isComplete()) {
+    this.varDefs[name] = type;
     this.runAgain = true;
   }
 };
@@ -213,21 +220,21 @@ InferTypes.prototype.handleReturnStatement = function (ast) {
 };
 
 InferTypes.prototype.handleVariableDeclaration = function (ast) {
-  this.declareVariable(ast.variable.name, ast.type.type);
+  this.declareVariable(ast.variable.name, ast.type);
 
   return Dys.Empty;
 };
 
 InferTypes.prototype.handleAssignment = function (ast) {
   // Ensure that expression type is bubbles
-  if (ast.type.isEmpty() && !ast.expression.type.isEmpty()) {
+  if (!ast.type.isComplete() && ast.expression.type.isComplete()) {
     ast.type = ast.expression.type;
     this.runAgain = true;
   }
 
   // Declare the type of the assigned bubble
-  if (!ast.type.isEmpty()) {
-    this.declareVariable(ast.variable.name, ast.type.type);
+  if (ast.type.isComplete()) {
+    this.declareVariable(ast.variable.name, ast.type);
   }
 
   return this.defaultHandler(ast);
@@ -242,6 +249,39 @@ InferTypes.prototype.handleVariable = function (ast) {
     } else if (!this.runAgain) {
       throw new SyntaxError('Can\'t infer type for "' + ast.name + '"');
     }
+  }
+
+  return this.defaultHandler(ast);
+};
+
+/**
+ * Literals: infer the type of array from its contents
+ */
+InferTypes.prototype.handleLiteral = function (ast) {
+  // Infer the type of an array
+  if (ast.type.type === 'array' && ast.type.subtype.isEmpty()) {
+    var itemTypes = ast.value.items
+      .reduce(function (a, b) { return a.combine(b.type); }, Dys.Empty);
+    ast.type.subtype = itemTypes;
+    this.runAgain = true;
+  }
+
+  // To do: allow for ranges of types other than int
+  if (ast.type.type === 'range' && ast.type.subtype.isEmpty()) {
+    ast.type.subtype = new Dys.Type('int');
+  }
+  return this.defaultHandler(ast);
+};
+
+/**
+ * For loops: infer the type of the iterator variable from the loop source subtype
+ */
+InferTypes.prototype.handleForLoop = function (ast) {
+  if (!ast.variable.isEmpty() &&
+    !ast.variable.type.isComplete() &&
+    ast.loopSource.type.isComplete()) {
+    ast.variable.type = ast.loopSource.type.subtype;
+    this.declareVariable(ast.variable.name, ast.variable.type);
   }
 
   return this.defaultHandler(ast);

@@ -38,7 +38,7 @@ File ([
   statements: [
     ForLoop (
     variable: Variable [Type int] (x)
-    loopSource: Literal [Type array] ([
+    loopSource: Literal [Type array [Type int] ] ([
       Literal [Type int] (1)
       Literal [Type int] (4)
       Literal [Type int] (9)
