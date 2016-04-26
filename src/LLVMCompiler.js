@@ -196,9 +196,9 @@ LLVMCompiler.prototype.handleForLoop = function (ast) {
 
   var startValue = null;
   var endValue = null;
-  if (loopSource.start && loopSource.end) {
-    startValue = loopSource.start;
-    endValue = loopSource.end;
+  if (loopSource.options.start && loopSource.options.end) {
+    startValue = loopSource.options.start;
+    endValue = loopSource.options.end;
   } else {
     throw new SyntaxError('Can\'t iterate on loopSource without start & end: ' + loopSource);
   }
@@ -416,18 +416,48 @@ LLVMCompiler.prototype.handleBuffer = function (ast) {
  * A type reference
  */
 LLVMCompiler.prototype.handleType = function (ast) {
-  var typeMap = {
-    'string': 'i8*',
-    'buffer': 'i8*',
-    'int': 'i32',
-    'bool': 'i1'
-  };
+  var type = this.builder.literal(null, null);
 
-  if (!typeMap[ast.type]) {
-    throw new SyntaxError('Unrecognised type "' + ast.toString() + '"');
+  switch (ast.type) {
+    case 'array':
+      if (ast.length) {
+        type.options.type = '[' + ast.length + ' x ' + this.handle(ast.subtype).type + ']';
+        type.options.length = ast.length;
+        type.options.start = this.builder.literal('i32', 0);
+        type.options.end = this.builder.literal('i32', ast.length - 1);
+      } else {
+        type.options.type = this.handle(ast.subtype).type + '*';
+      }
+      break;
+
+    case 'range':
+      type.options.type = '*range';
+      break;
+
+    case 'string':
+      if (ast.length) {
+        type.options.type = '[' + (ast.length + 1) + ' x i8]';
+      } else {
+        type.options.type = 'i8*';
+      }
+      break;
+
+    default:
+      var typeMap = {
+        'string': 'i8*',
+        'buffer': 'i8*',
+        'int': 'i32',
+        'float': 'float',
+        'bool': 'i1'
+      };
+
+      if (!typeMap[ast.type]) {
+        throw new SyntaxError('Unrecognised type "' + ast.toString() + '"');
+      }
+      type.options.type = typeMap[ast.type];
   }
 
-  return this.builder.literal(typeMap[ast.type], null);
+  return type;
 };
 
 /**
@@ -435,60 +465,41 @@ LLVMCompiler.prototype.handleType = function (ast) {
  */
 LLVMCompiler.prototype.handleLiteral = function (ast) {
   var llvm = this;
-  var type = null;
   var val = null;
+
+  var type = this.handle(ast.type);
 
   switch (ast.type.type) {
     case 'array':
       var literal = '[' + ast.value.map(function (astItem) {
         var item = llvm.handle(astItem);
         if (item.code) throw new SyntaxError('Can\'t put ' + astItem.toString() + ' in an array literal');
-        if (!type) {
-          type = item.type;
-        } else if (type !== item.type) {
-          throw new SyntaxError('Inconsistent types: ' + item.type + ' doesn\'t match ' + type);
-        }
         return item.type + ' ' + item.value;
       }).join(', ') + ']';
 
       val = this.builder.globalConst(
-        '[' + ast.value.length + ' x ' + type + ']',
-        'private unnamed_addr constant ' + '[' + ast.value.length + ' x ' + type + ']' + literal
+        type.type,
+        'private unnamed_addr constant ' + type.type + literal
       );
-
-      val.length = ast.value.length;
-      val.start = this.builder.literal('i32', 0);
-      val.end = this.builder.literal('i32', val.length - 1);
+      val.options.start = type.options.start;
+      val.options.end = type.options.end;
       return val;
 
     case 'range':
-      val = this.builder.literal(
-        '*range',
-        null
-      );
-      val.start = this.handle(ast.value.start);
-      val.end = this.handle(ast.value.end);
-      return val;
+      type.options.start = this.handle(ast.value.start);
+      type.options.end = this.handle(ast.value.end);
+      return type;
 
     case 'string':
-      type = '[' + (ast.value.length + 1) + ' x i8]';
       return this.builder.globalConst(
-        type,
-        'private unnamed_addr constant ' + type + ' c"' +
+        type.type,
+        'private unnamed_addr constant ' + type.type + ' c"' +
           ast.value.replace(/[\\'"]/g, '\\$&').replace(/\n/g, '\\0A').replace(/\r/g, '\\00') + '\\00"'
       );
 
-    case 'float':
-      return this.builder.literal('float', ast.value);
-
-    case 'int':
-      return this.builder.literal('i32', ast.value);
-
-    case 'bool':
-      return this.builder.literal('i1', ast.value);
-
     default:
-      throw new SyntaxError('Bad type in AST: "' + ast.type + '"');
+      type.options.value = ast.value;
+      return type;
   }
 };
 

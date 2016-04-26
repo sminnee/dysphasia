@@ -1,11 +1,31 @@
 use puts(string);
 main {
   x = [1, 4, 9];
-  for(i in x) {
-    puts("Counting " + i);
+  for(y in x) {
+    puts("Counting " + y);
   };
 }
 -----
+declare i32 @puts(i8* noalias nocapture) nounwind
+@str = private unnamed_addr constant [3 x i32][i32 1, i32 4, i32 9]
+@str2 = private unnamed_addr constant [12 x i8] c"Counting %i\00"
+define i32 @main() {
+  br label %Entry
+  Entry:
+    br label %Loop
+  Loop:
+    %i = phi i32 [ 0, %Entry ], [ %nextvar, %Loop ]
+    %ptr = getelementptr inbounds [3 x i32]* @str, i32 0, i32 %i
+    %y = load i32* %ptr
+  %strConcat = alloca i8, i32 100
+  %var = getelementptr [12 x i8]* @str2, i64 0, i64 0
+  %var2 = call i32 (i8*, i32, i8*, ...)* @snprintf(i8* %strConcat, i32 100, i8* %var, i32 %y)
+  %var3 = call i32 (i8*)* @puts(i8* %strConcat)
+  %nextvar = add i32 %i, 1
+  %break = icmp ugt i32 %nextvar, 2
+  br i1 %break, label %Continue, label %Loop
+  Continue:
+}
 
 -----
 File ([
@@ -23,13 +43,13 @@ File ([
       ])
     )
     ForLoop (
-    variable: Variable (i)
+    variable: Variable (y)
     loopSource: Variable (x)
     statements: [
       FnCall puts ([
         StrConcat [Type string] ([
           Literal [Type string] (Counting )
-          Variable (i)
+          Variable (y)
         ])
       ])
     ])
@@ -51,13 +71,13 @@ File ([
       ])
     )
     ForLoop (
-    variable: Variable [Type int] (i)
+    variable: Variable [Type int] (y)
     loopSource: Variable [Type array [Type int] x 3 ] (x)
     statements: [
       FnCall puts ([
         StrConcat [Type string] ([
           Literal [Type string] (Counting )
-          Variable [Type int] (i)
+          Variable [Type int] (y)
         ])
       ])
     ])

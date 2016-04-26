@@ -679,7 +679,10 @@ Type.prototype.transformChildren = function (transformer) {
 };
 
 Type.prototype.equals = function (other) {
-  return this.nodeType === other.nodeType && this.type === other.type && this.subtype.equals(other.subtype);
+  return this.nodeType === other.nodeType &&
+    this.type === other.type &&
+    this.subtype.equals(other.subtype) &&
+    this.length === other.length;
 };
 
 /**
