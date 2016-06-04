@@ -2,6 +2,11 @@ var util = require('util');
 var ASTTransform = require('./ASTTransform');
 var Dys = require('../DysAST');
 
+function TypeInferenceError (msg) {
+  SyntaxError.apply(this, msg);
+}
+util.inherits(TypeInferenceError, SyntaxError);
+
 /**
  * Infer the types of vall variables and expressions that don't have types listed.
  * Also attaches function call signatures to function calls.
@@ -14,6 +19,7 @@ function InferTypes () {
   this.fnTypeHints = {};
   this.fnRenaming = {};
   this.runAgain = false;
+  this.errors = [];
 }
 
 util.inherits(InferTypes, ASTTransform);
@@ -96,31 +102,69 @@ InferTypes.prototype.getFnSignature = function (name) {
 InferTypes.prototype.handleFile = function (ast) {
   // Repeat until runAgain isn't set by something in the transformation
   do {
+    this.errors = [];
     this.runAgain = false;
     ast = this.defaultHandler(ast);
   } while (this.runAgain);
+
+  // Any errors in the final run?
+  if(this.errors.length) {
+    throw new SyntaxError('Type inferencing errors:\n' + this.errors.join('\n'));
+  }
+
   return ast;
 };
 
+/**
+ * Check the types of input arguments.
+ *  - For mis-matched types, apply casting
+ *  - For array operations, choose the correct array operation
+ */
 InferTypes.prototype.handleOp = function (ast) {
   var result = this.defaultHandler(ast);
 
   // Some operators come with a pre-defined type, e.g. comparisons are always boolean
   if (!result.type.isEmpty()) return result;
 
-  // Matching types
-  if (result.left.type.type === result.right.type.type) {
-    result.type = result.left.type;
-  } else {
-    // Missing types - only an error if we're not doing another pass
-    if (result.left.type.isEmpty() || result.right.type.isEmpty()) {
-      if (!this.runAgain) {
-        throw new SyntaxError('Can\'t find the types in ' + result.toString());
+  // Array operations
+  if (result.left.type.type === 'array' || result.left.type.type === 'array') {
+    // First arg must always be an array
+    if (result.left.type.type !== 'array') {
+      var tmp = result.left;
+      result.left = result.right;
+      result.right = tmp;
+    }
+
+    // 2 arrays
+    if (result.right.type.type === 'array') {
+      result.op = 'array:' + result.op;
+      // Must be similarly sized
+      if (!result.left.type.equals(result.right.type)) {
+        throw new SyntaxError('Types don\'t match in array op ' + result.toString());
       }
 
-    // Complete but mis-matched types
+    // array-scalar op
+    } else if (result.right.type.type === 'int' || result.right.type.type === 'float') {
+      result.op = 'array-scalar:' + result.op;
+    }
+
+    //
+    result.type = result.left.type;
+
+  // Scalar operations
+  } else {
+    // Matching types
+    if (result.left.type.type === result.right.type.type) {
+      result.type = result.left.type;
     } else {
-      throw new SyntaxError('Types don\'t match in ' + result.toString());
+      // Missing types - only an error if we're not doing another pass
+      if (result.left.type.isEmpty() || result.right.type.isEmpty()) {
+        this.errors.push('Can\'t find the types in ' + result.toString());
+
+      // Complete but mis-matched types
+      } else {
+        throw new SyntaxError('Types don\'t match in ' + result.toString());
+      }
     }
   }
 
@@ -203,8 +247,8 @@ InferTypes.prototype.handleFnCall = function (ast) {
       result.signature = signature;
     }
     result.type = result.type.combine(signature.type);
-  } else if (!this.runAgain) {
-    throw new SyntaxError("Can't find definition of function " + result.name);
+  } else {
+    this.errors.push('Can\'t find definition of function "' + result.name + '"');
   }
   return result;
 };
@@ -247,7 +291,7 @@ InferTypes.prototype.handleVariable = function (ast) {
       ast.type = inferredType;
       this.runAgain = true;
     } else if (!this.runAgain) {
-      throw new SyntaxError('Can\'t infer type for "' + ast.name + '"');
+      this.errors.push('Can\'t infer type for "' + ast.name + '"');
     }
   }
 

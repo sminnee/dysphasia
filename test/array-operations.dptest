@@ -1,0 +1,38 @@
+main {
+  x = [1, 2, 3, 5];
+  y = x * 2;
+  z = y * y;
+}
+------
+
+------
+
+------
+File ([
+  FnDef main (
+  statements: [
+    Assignment [Type array [Type int] x 4 ] (
+      Variable [Type array [Type int] x 4 ] (x)
+      Literal [Type array [Type int] x 4 ] ([
+        Literal [Type int] (1)
+        Literal [Type int] (2)
+        Literal [Type int] (3)
+        Literal [Type int] (5)
+      ])
+    )
+    Assignment [Type array [Type int] x 4 ] (
+      Variable [Type array [Type int] x 4 ] (y)
+      Op [Type array [Type int] x 4 ] (array-scalar:*
+        Variable [Type array [Type int] x 4 ] (x)
+        Literal [Type int] (2)
+      )
+    )
+    Assignment [Type array [Type int] x 4 ] (
+      Variable [Type array [Type int] x 4 ] (z)
+      Op [Type array [Type int] x 4 ] (array:*
+        Variable [Type array [Type int] x 4 ] (y)
+        Variable [Type array [Type int] x 4 ] (y)
+      )
+    )
+  ])
+])

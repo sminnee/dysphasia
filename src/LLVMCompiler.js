@@ -363,6 +363,10 @@ LLVMCompiler.prototype.handleOp = function (ast) {
   var right = this.handle(ast.right);
   var outputType = this.handle(ast.type).type;
 
+  if (opMap[ast.op] === undefined) {
+    throw new SyntaxError('Unrecognised operation: ' + ast.op);
+  }
+
   if (left.type !== right.type) {
     throw new SyntaxError("Types don't match: " + ast.toString());
   }

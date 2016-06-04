@@ -31,6 +31,10 @@ describe('The Dysphasia language', function () {
       testASTTransform('test/use-puts.dptest', [new InferTypes()]);
       testIntermediateCode('test/use-puts.dptest');
     });
+    it('support array-scalar and array-array operations (array-operations)', function () {
+      testASTTransform('test/array-operations.dptest', [new InferTypes()]);
+      testIntermediateCode('test/array-operations.dptest');
+    });
   });
 
   describe('Variable assignments', function () {
