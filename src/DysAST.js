@@ -411,13 +411,44 @@ Op.prototype.transformChildren = function (transformer) {
   return new Op(this.op, transformer(this.left), transformer(this.right), transformer(this.type));
 };
 
+Dysphasia.addNodeType(
+  'Type',
+  [
+    {
+      name: 'type'
+    },
+    {
+      name: 'subtype',
+      type: 'Node.Type'
+    },
+    {
+      name: 'length'
+    }
+  ]
+);
+
+Dysphasia.Type.prototype.toString = function () {
+  if (this.subtype.isEmpty()) return '[Type ' + this.type + ']';
+  else {
+    var lengthSuffix = this.length === null ? '' : ' x ' + this.length;
+    return '[Type ' + this.type + ' ' + this.subtype.toString() + lengthSuffix + ' ]';
+  }
+};
+/**
+ * Returns true if there are no gaps in the type spec.
+ * An array without a subtype is considered incomplete
+ */
+Dysphasia.Type.prototype.isComplete = function () {
+  return (this.type !== 'array' && this.type !== 'range') || this.subtype.isComplete();
+};
+
 /**
  * A string concatenation
  */
 function StrConcat (left, right) {
   ASTNode.call(this, 'StrConcat');
 
-  this.type = new Type('string');
+  this.type = new Dysphasia.Type('string');
 
   validateItem(left, 'StrConcat');
 
@@ -523,46 +554,6 @@ Variable.prototype.combine = function (other) {
   throw new SyntaxError('Can\'t combine ' + this.toString() + ' with ' + other.toString());
 };
 
-/**
- * A reference to a type
- *
- * @param string type: int, float, string, array or range
- * @param ASTNode subtype: for an array, the type of the items
- */
-function Type (type, subtype, length) {
-  ASTNode.call(this, 'Type');
-  this.type = type;
-  this.subtype = subtype || Empty;
-  this.length = length || null;
-}
-util.inherits(Type, ASTNode);
-
-Type.prototype.toString = function () {
-  if (this.subtype.isEmpty()) return '[Type ' + this.type + ']';
-  else {
-    var lengthSuffix = this.length === null ? '' : ' x ' + this.length;
-    return '[Type ' + this.type + ' ' + this.subtype.toString() + lengthSuffix + ' ]';
-  }
-};
-
-Type.prototype.transformChildren = function (transformer) {
-  return new Type(this.type, transformer(this.subtype), this.length);
-};
-
-Type.prototype.equals = function (other) {
-  return this.nodeType === other.nodeType &&
-    this.type === other.type &&
-    this.subtype.equals(other.subtype) &&
-    this.length === other.length;
-};
-
-/**
- * Returns true if there are no gaps in the type spec.
- * An array without a subtype is considered incomplete
- */
-Type.prototype.isComplete = function () {
-  return (this.type !== 'array' && this.type !== 'range') || this.subtype.isComplete();
-};
 
 Dysphasia.addNodeType(
   'Literal',
@@ -574,7 +565,7 @@ Dysphasia.addNodeType(
       name: 'type',
       type: 'Node.Type',
       valueConverter: function (value) {
-        if (typeof value === 'string') return new Type(value);
+        if (typeof value === 'string') return new Dysphasia.Type(value);
         return value;
       }
     }
@@ -612,7 +603,7 @@ module.exports = {
   Cast: Cast,
   Buffer: Buffer,
   Variable: Variable,
-  Type: Type,
+  Type: Dysphasia.Type,
   Literal: Dysphasia.Literal,
 
   Empty: Dysphasia.Empty

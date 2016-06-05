@@ -67,6 +67,19 @@ ASTKit.prototype.addNodeType = function (name, propSpec) {
     return result;
   };
 
+  Subclass.prototype.equals = function (other) {
+    var i, spec;
+    for (i = 0; i < propSpec.length; i++) {
+      spec = propSpec[i];
+      if (spec.type && spec.type.match(/^Node/)) {
+        if (!this.props[spec.name].equals(other[spec.name])) return false;
+      } else {
+        if (this.props[spec.name] !== other[spec.name]) return false;
+      }
+    }
+    return true;
+  };
+
   this[name] = Subclass;
 };
 
