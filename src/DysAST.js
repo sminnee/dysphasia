@@ -9,7 +9,7 @@ Dysphasia.addNodeType(
   [
     {
       name: 'statements',
-      type: 'List',
+      type: 'Node.List',
       transformCallback: function (node) { return node.flatten(); }
     }
   ]
@@ -564,29 +564,23 @@ Type.prototype.isComplete = function () {
   return (this.type !== 'array' && this.type !== 'range') || this.subtype.isComplete();
 };
 
-/**
- * A literal value
- *
- * @param string type: int, float, string, array or range
- * @param value:
- *  - value for type int/float/string
- *  - array for type array
- *  - map { start, end } for type range
- */
-function Literal (value, type) {
-  ASTNode.call(this, 'Literal');
-
-  // Types should always be stored as Dys.Type objects
-  if (typeof type === 'string') {
-    type = new Type(type);
-  }
-
-  this.type = type;
-  this.value = value;
-}
-util.inherits(Literal, ASTNode);
-
-Literal.prototype.toString = function () {
+Dysphasia.addNodeType(
+  'Literal',
+  [
+    {
+      name: 'value'
+    },
+    {
+      name: 'type',
+      type: 'Node.Type',
+      valueConverter: function (value) {
+        if (typeof value === 'string') return new Type(value);
+        return value;
+      }
+    }
+  ]
+);
+Dysphasia.Literal.prototype.toString = function () {
   var val;
   switch (this.type.type) {
     case 'range':
@@ -596,10 +590,6 @@ Literal.prototype.toString = function () {
   }
 
   return this.stringBuilder([this.type], { '': val });
-};
-
-Literal.prototype.transformChildren = function () {
-  return this;
 };
 
 module.exports = {
@@ -623,7 +613,7 @@ module.exports = {
   Buffer: Buffer,
   Variable: Variable,
   Type: Type,
-  Literal: Literal,
+  Literal: Dysphasia.Literal,
 
   Empty: Dysphasia.Empty
 };

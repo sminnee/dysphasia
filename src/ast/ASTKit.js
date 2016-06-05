@@ -20,7 +20,15 @@ ASTKit.prototype.addNodeType = function (name, propSpec) {
 
     var args = arguments;
     propSpec.forEach(function (spec, i) {
-      var value = args[i] || Empty;
+      if (spec.type && spec.type.match(/^Node/)) {
+        var value = args[i] || Empty;
+        if (spec.valueConverter) {
+          value = spec.valueConverter(value) || Empty;
+        }
+      } else {
+        value = args[i];
+      }
+
       self.props[spec.name] = value;
     });
   }
@@ -45,13 +53,13 @@ ASTKit.prototype.addNodeType = function (name, propSpec) {
     var constructorArgs = [ ];
 
     propSpec.forEach(function (spec, i) {
-      if (spec.type === 'int' || spec.type === 'float' || spec.type === 'string') {
-        constructorArgs[i] = self.props[spec.name];
-      } else {
+      if (spec.type && spec.type.match(/^Node/)) {
         constructorArgs[i] = transformer(self.props[spec.name]);
         if (spec.transformCallback) {
           constructorArgs[i] = (spec.transformCallback)(constructorArgs[i]);
         }
+      } else {
+        constructorArgs[i] = self.props[spec.name];
       }
     });
 
