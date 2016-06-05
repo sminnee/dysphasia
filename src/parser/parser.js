@@ -94,10 +94,10 @@ module.exports = (function() {
               return new Dys.ReturnStatement(expr);
             },
         peg$c15 = function(left, rest) {
-              return new Dys.StrConcat(left, rest);
+              return new Dys.StrConcat(new Dys.List([left]).concat(rest.items ? rest.items : rest));
             },
         peg$c16 = function(left, right) {
-              return new Dys.StrConcat(left, right);
+              return new Dys.StrConcat(new Dys.List([left, right]));
             },
         peg$c17 = function(left, op, right) {
               return new Dys.Op(op, left, right, new Dys.Type('bool'));

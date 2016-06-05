@@ -126,11 +126,11 @@ expression
 stringExpression
   = left:simpleTypeOrVariable plus rest:stringExpression
     {
-      return new Dys.StrConcat(left, rest);
+      return new Dys.StrConcat(new Dys.List([left]).concat(rest.items ? rest.items : rest));
     }
   / left:string plus right:simpleTypeOrVariable
     {
-      return new Dys.StrConcat(left, right);
+      return new Dys.StrConcat(new Dys.List([left, right]));
     }
   / string
 

@@ -6,13 +6,12 @@ var Dysphasia = new ASTKit();
 
 Dysphasia.addNodeType(
   'File',
-  [
-    {
-      name: 'statements',
+  {
+    statements: {
       type: 'Node.List',
       transformCallback: function (node) { return node.flatten(); }
     }
-  ]
+  }
 );
 
 Dysphasia.File.prototype.toString = function () {
@@ -34,136 +33,28 @@ function indent (str) {
 }
 
 /**
- * Validate a single item, throw a SyntaxError if there is a bad one
- */
-function validateItem (item, className) {
-  if (typeof className !== 'string') {
-    className = 'List';
-  }
-
-  if (!item || !item.nodeType) {
-    throw new SyntaxError('Can\'t add item to Dys.' + className + ': ' + item);
-  }
-}
-
-/**
- * Validate an array of items, throw a SyntaxError if there is a bad one
- * If singleItemAllowed is true, then a single item will also be valid
- */
-function validateItems (items, singleItemAllowed) {
-  if (items && items.nodeType && singleItemAllowed === true) {
-    return true;
-  }
-
-  items.forEach(validateItem);
-}
-
-/**
- * An ordered list of AST nodes
- */
-function List (items) {
-  ASTNode.call(this, 'List');
-  if (items) {
-    validateItems(items);
-    this.items = items.filter(function (item) { return item.nodeType !== 'Empty'; });
-  } else {
-    this.items = [];
-  }
-}
-util.inherits(List, ASTNode);
-
-Object.defineProperties(List.prototype, {
-  length: {
-    get: function () {
-      return this.items.length;
-    }
-  },
-  first: {
-    get: function () {
-      return this.items[0];
-    },
-    set: function (item) {
-      this.items[0] = item;
-    }
-  },
-  last: {
-    get: function () {
-      return this.items[this.items.length - 1];
-    },
-    set: function (item) {
-      this.items[this.items.length - 1] = item;
-    }
-  }
-});
-
-List.prototype.toString = function () {
-  return '[\n' + indent(this.items.map(function (item) { return item.toString(); }).join('\n')) + '\n]';
-};
-
-List.prototype.transformChildren = function (transformer) {
-  return this.mapList(transformer);
-};
-
-List.prototype.equals = function (other) {
-  if (this.length !== other.length) return false;
-  if (this.nodeType !== other.nodeType) return false;
-
-  var diffCheck = Math.min.apply(Math, this.items.map(function (val, i) {
-    return val.equals(other.items[i]) ? 1 : 0;
-  }));
-  return diffCheck === 1;
-};
-
-List.prototype.map = function (callback) {
-  return this.items.map(callback);
-};
-List.prototype.mapList = function (callback) {
-  return new List(this.items.map(callback));
-};
-
-List.prototype.forEach = function (callback) {
-  return this.items.forEach(callback);
-};
-
-List.prototype.concat = function (extra) {
-  if (extra.nodeType === 'List') {
-    return new List(this.items.concat(extra.items));
-  } else {
-    validateItems(extra, true);
-    return new List(this.items.concat(extra));
-  }
-};
-
-/**
- * Return a new list where any nested List items are flattened
- */
-List.prototype.flatten = function () {
-  return this.items.reduce(function (list, next) {
-    return list.concat(next);
-  }, new List());
-};
-
-/**
  * A 'use' statement for importing external functions
  */
-function UseStatement (name, type, args, varArgs) {
-  ASTNode.call(this, 'UseStatement');
-  this.type = type;
-  this.name = name;
-  this.args = args;
-  this.varArgs = varArgs;
-}
-util.inherits(UseStatement, ASTNode);
 
-Object.defineProperties(UseStatement.prototype, {
+Dysphasia.addNodeType(
+  'UseStatement',
+  {
+    name: { type: 'string' },
+    type: { type: 'Node.Type' },
+    args: { type: 'Node.List' },
+    varArgs: { }
+  }
+);
+
+Object.defineProperties(Dysphasia.UseStatement.prototype, {
   signature: {
     get: function () {
-      return new UseStatement(Empty, this.type, this.args, this.varArgs);
+      return new Dysphasia.UseStatement(Empty, this.type, this.args, this.varArgs);
     }
   }
 });
 
-UseStatement.prototype.toString = function () {
+Dysphasia.UseStatement.prototype.toString = function () {
   return this.stringBuilder([
     this.type,
     this.name,
@@ -173,20 +64,9 @@ UseStatement.prototype.toString = function () {
   });
 };
 
-UseStatement.prototype.transformChildren = function (transformer) {
-  return new UseStatement(this.name, transformer(this.type), transformer(this.args), this.varArgs);
-};
-
-UseStatement.prototype.equals = function (other) {
-  return this.name === other.name &&
-    this.type.equals(other.type) &&
-    this.args.equals(other.args) &&
-    this.varArgs === other.varArgs;
-};
-
-UseStatement.prototype.combine = function (other) {
+Dysphasia.UseStatement.prototype.combine = function (other) {
   if (!this.type) throw new SyntaxError('RAR: ' + this.toString());
-  return new UseStatement(
+  return new Dysphasia.UseStatement(
     this.name,
     this.type.combine(other.type),
     this.args.combine(other.args),
@@ -197,25 +77,26 @@ UseStatement.prototype.combine = function (other) {
 /**
  * A function definition
  */
-function FnDef (name, type, args, guard, statements) {
-  ASTNode.call(this, 'FnDef');
-  this.name = name;
-  this.type = type;
-  this.args = args;
-  this.guard = guard;
-  this.statements = statements;
-}
-util.inherits(FnDef, ASTNode);
+Dysphasia.addNodeType(
+  'FnDef',
+  {
+    name: { type: 'string' },
+    type: { type: 'Node.Type' },
+    args: { type: 'Node.List' },
+    guard: { type: 'Node' },
+    statements: { type: 'Node.List' }
+  }
+);
 
-Object.defineProperties(FnDef.prototype, {
+Object.defineProperties(Dysphasia.FnDef.prototype, {
   signature: {
     get: function () {
-      return new UseStatement(null, this.type, this.args.mapList(function (arg) { return arg.type; }), false);
+      return new Dysphasia.UseStatement(null, this.type, this.args.mapList(function (arg) { return arg.type; }), false);
     }
   }
 });
 
-FnDef.prototype.toString = function () {
+Dysphasia.FnDef.prototype.toString = function () {
   return this.stringBuilder(
     [ this.type, this.name ],
     {
@@ -226,24 +107,19 @@ FnDef.prototype.toString = function () {
   );
 };
 
-FnDef.prototype.transformChildren = function (transformer) {
-  return new FnDef(
-    this.name, transformer(this.type), transformer(this.args), transformer(this.guard), transformer(this.statements)
-  );
-};
-
 /**
  * An if block
  */
-function IfBlock (test, pass, fail) {
-  ASTNode.call(this, 'IfBlock');
-  this.test = test;
-  this.pass = pass;
-  this.fail = fail;
-}
-util.inherits(IfBlock, ASTNode);
+Dysphasia.addNodeType(
+  'IfBlock',
+  {
+    test: { type: 'Node' },
+    pass: { type: 'Node' },
+    fail: { type: 'Node' }
+  }
+);
 
-IfBlock.prototype.toString = function () {
+Dysphasia.IfBlock.prototype.toString = function () {
   return this.stringBuilder([], {
     test: this.test,
     pass: this.pass,
@@ -251,22 +127,20 @@ IfBlock.prototype.toString = function () {
   });
 };
 
-IfBlock.prototype.transformChildren = function (transformer) {
-  return new IfBlock(transformer(this.test), transformer(this.pass), transformer(this.fail));
-};
 
 /**
  * A for loop
  */
-function ForLoop (variable, loopSource, statements) {
-  ASTNode.call(this, 'ForLoop');
-  this.variable = variable || Empty;
-  this.loopSource = loopSource || Empty;
-  this.statements = statements || Empty;
-}
-util.inherits(ForLoop, ASTNode);
+Dysphasia.addNodeType(
+  'ForLoop',
+  {
+    variable: { type: 'Node.Variable' },
+    loopSource: { type: 'Node' },
+    statements: { type: 'Node.List' }
+  }
+);
 
-ForLoop.prototype.toString = function () {
+Dysphasia.ForLoop.prototype.toString = function () {
   return this.stringBuilder([], {
     variable: this.variable,
     loopSource: this.loopSource,
@@ -274,27 +148,24 @@ ForLoop.prototype.toString = function () {
   });
 };
 
-ForLoop.prototype.transformChildren = function (transformer) {
-  return new ForLoop(transformer(this.variable), transformer(this.loopSource), transformer(this.statements));
-};
-
 /**
  * A function call
  */
-function FnCall (name, args) {
-  ASTNode.call(this, 'FnCall');
-  this.name = name;
-  this.args = args;
-  this.signature = Empty;
-  this.type = Empty;
-}
-util.inherits(FnCall, ASTNode);
+Dysphasia.addNodeType(
+  'FnCall',
+  {
+    name: { type: 'string' },
+    args: { type: 'Node.List' },
+    signature: { type: 'Node.List' },
+    type: { type: 'Node.Type' },
+  }
+);
 
-FnCall.prototype.toString = function () {
+Dysphasia.FnCall.prototype.toString = function () {
   return this.stringBuilder([this.type, this.name], { '': this.args, 'signature': this.signature });
 };
 
-FnCall.prototype.transformChildren = function (transformer) {
+Dysphasia.FnCall.prototype.transformChildren = function (transformer) {
   var args = transformer(this.args);
   var prefix = [];
   args = args.mapList(function (arg) {
@@ -307,10 +178,10 @@ FnCall.prototype.transformChildren = function (transformer) {
   });
 
   // If there is a prefix, return a list
-  var fnCall = new FnCall(this.name, args);
+  var fnCall = new Dysphasia.FnCall(this.name, args);
   if (prefix.length > 0) {
     prefix.push(fnCall);
-    return new List(prefix);
+    return new Dysphasia.List(prefix);
   }
 
   if (!this.type.isEmpty()) {
@@ -326,105 +197,81 @@ FnCall.prototype.transformChildren = function (transformer) {
 /**
  * A 'return' statement
  */
-function ReturnStatement (expression, type) {
-  ASTNode.call(this, 'ReturnStatement');
-  this.expression = expression;
-  this.type = type || Empty;
-}
-util.inherits(ReturnStatement, ASTNode);
+Dysphasia.addNodeType(
+  'ReturnStatement',
+  {
+    expression: { type: 'Node' },
+    type: { type: 'Node.Type' }
+  }
+);
 
-ReturnStatement.prototype.toString = function () {
+Dysphasia.ReturnStatement.prototype.toString = function () {
   return this.stringBuilder([this.type], { '': this.expression });
-};
-
-ReturnStatement.prototype.transformChildren = function (transformer) {
-  return new ReturnStatement(transformer(this.expression), transformer(this.type));
 };
 
 /**
  * A variable declaration
  */
-function VariableDeclaration (variable, type) {
-  ASTNode.call(this, 'VariableDeclaration');
-
-  if (type.nodeType !== 'Type') {
-    throw new SyntaxError('VariableDeclaration type must be a Dys.Type object');
+Dysphasia.addNodeType(
+  'VariableDeclaration',
+  {
+    variable: { type: 'Node.Variable' },
+    type: { type: 'Node.Type' }
   }
-  if (variable.nodeType !== 'Variable') {
-    throw new SyntaxError('VariableDeclaration variable must be a Dys.Variable object');
-  }
+);
 
-  this.nodeType = 'VariableDeclaration';
-  this.type = type;
-  this.variable = variable;
-}
-util.inherits(VariableDeclaration, ASTNode);
-
-VariableDeclaration.prototype.toString = function () {
+Dysphasia.VariableDeclaration.prototype.toString = function () {
   return this.stringBuilder([this.type], { '': this.variable });
-};
-
-VariableDeclaration.prototype.transformChildren = function (transformer) {
-  return new VariableDeclaration(transformer(this.variable), transformer(this.type));
 };
 
 /**
  * A variable assigment
  */
-function Assignment (variable, expression, type) {
-  ASTNode.call(this, 'Assignment');
+Dysphasia.addNodeType(
+  'Assignment',
+  {
+    variable: { type: 'Node.Variable' },
+    expression: { type: 'Node' },
+    type: {
+      type: 'Node.Type',
+      valueConverter: function (type) { return type.isEmpty() ? this.props.expression.type : type; }
+    }
+  }
+);
 
-  this.variable = variable;
-  this.expression = expression;
-  this.type = type || this.expression.type || Empty;
-}
-util.inherits(Assignment, ASTNode);
-
-Assignment.prototype.toString = function () {
+Dysphasia.Assignment.prototype.toString = function () {
   var typeStr = (this.type.isEmpty()) ? '' : (this.type.toString() + ' ');
   return 'Assignment ' + typeStr + '(\n' + indent(this.variable.toString() + '\n' + this.expression.toString()) + '\n)';
-};
-
-Assignment.prototype.transformChildren = function (transformer) {
-  return new Assignment(transformer(this.variable), transformer(this.expression), transformer(this.type));
 };
 
 /**
  * A binary operation
  */
-function Op (op, left, right, type) {
-  ASTNode.call(this, 'Op');
+Dysphasia.addNodeType(
+  'Op',
+  {
+    op: { type: 'string' },
+    left: { type: 'Node' },
+    right: { type: 'Node' },
+    type: { type: 'Node.Type' }
+  }
+);
 
-  this.op = op;
-  this.left = left;
-  this.right = right;
-  this.type = type || Empty;
-}
-util.inherits(Op, ASTNode);
-
-Op.prototype.toString = function () {
+Dysphasia.Op.prototype.toString = function () {
   var typeStr = (this.type.isEmpty()) ? '' : (this.type.toString() + ' ');
   return 'Op ' + typeStr + '(' + this.op + '\n' + indent(this.left.toString() + '\n' + this.right.toString()) + '\n)';
 };
 
-Op.prototype.transformChildren = function (transformer) {
-  return new Op(this.op, transformer(this.left), transformer(this.right), transformer(this.type));
-};
-
+/**
+ * A type expression
+ */
 Dysphasia.addNodeType(
   'Type',
-  [
-    {
-      name: 'type'
-    },
-    {
-      name: 'subtype',
-      type: 'Node.Type'
-    },
-    {
-      name: 'length'
-    }
-  ]
+  {
+    type: {},
+    subtype: { type: 'Node.Type' },
+    length: {}
+  }
 );
 
 Dysphasia.Type.prototype.toString = function () {
@@ -445,72 +292,47 @@ Dysphasia.Type.prototype.isComplete = function () {
 /**
  * A string concatenation
  */
-function StrConcat (left, right) {
-  ASTNode.call(this, 'StrConcat');
-
-  this.type = new Dysphasia.Type('string');
-
-  validateItem(left, 'StrConcat');
-
-  // Left and Right may be StrConcat options too
-  if (left.nodeType === 'StrConcat') {
-    this.items = left.items;
-  } else if (left.nodeType === 'List') {
-    this.items = left;
-  } else {
-    this.items = new List([left]);
-  }
-  // Right is optional - left may simply be a list
-  if (right) {
-    validateItem(right, 'StrConcat');
-    if (right.nodeType === 'StrConcat') {
-      this.items = this.items.concat(right.items);
-    } else {
-      this.items = this.items.concat(right);
+Dysphasia.addNodeType(
+  'StrConcat',
+  {
+    items: { type: 'Node.List' },
+    type: {
+      type: 'Node.Type',
+      valueConverter: function (value) { return value.isEmpty() ? new Dysphasia.Type('string') : value; }
     }
   }
-}
-util.inherits(StrConcat, ASTNode);
+);
 
-StrConcat.prototype.toString = function () {
+Dysphasia.StrConcat.prototype.toString = function () {
   return this.stringBuilder([this.type], { '': this.items });
-};
-
-StrConcat.prototype.transformChildren = function (transformer) {
-  return new StrConcat(transformer(this.items));
 };
 
 /**
  * A casted value
  */
-function Cast (type, expression) {
-  ASTNode.call(this, 'Cast');
-
-  this.type = type;
-  this.expression = expression;
-}
-util.inherits(Cast, ASTNode);
-
-Cast.prototype.toString = function () {
+Dysphasia.addNodeType(
+  'Cast',
+  {
+    type: { type: 'Node.Type' },
+    expression: { type: 'Node' }
+  }
+);
+Dysphasia.Cast.prototype.toString = function () {
   return this.stringBuilder([this.type], { '': this.expression });
-};
-
-Cast.prototype.transformChildren = function (transformer) {
-  return new Cast(transformer(this.type), transformer(this.expression));
 };
 
 /**
  * A buffer for loading string values into
  */
-function Buffer (variable, length) {
-  ASTNode.call(this, 'Buffer');
 
-  this.variable = variable;
-  this.length = length;
-}
-util.inherits(Buffer, ASTNode);
-
-Object.defineProperties(Buffer.prototype, {
+Dysphasia.addNodeType(
+  'Buffer',
+  {
+    variable: { type: 'Node.Variable' },
+    length: {}
+  }
+);
+Object.defineProperties(Dysphasia.Buffer.prototype, {
   type: {
     get: function () {
       return this.variable.type;
@@ -518,59 +340,40 @@ Object.defineProperties(Buffer.prototype, {
   }
 });
 
-Buffer.prototype.toString = function () {
+Dysphasia.Buffer.prototype.toString = function () {
   return this.stringBuilder([this.length, this.variable]);
 };
 
-Buffer.prototype.transformChildren = function (transformer) {
-  return new Buffer(transformer(this.variable), this.length);
-};
+Dysphasia.addNodeType(
+  'Variable',
+  {
+    name: {},
+    type: { type: 'Node.Type' }
+  }
+);
 
-/**
- * A variable
- */
-function Variable (name, type) {
-  ASTNode.call(this, 'Variable');
-
-  this.name = name;
-  this.type = type || Empty;
-}
-util.inherits(Variable, ASTNode);
-
-Variable.prototype.toString = function () {
+Dysphasia.Variable.prototype.toString = function () {
   return this.stringBuilder([this.type], { '': this.name });
 };
-
-Variable.prototype.transformChildren = function (transformer) {
-  return new Variable(this.name, transformer(this.type));
-};
-
-Variable.prototype.equals = function (other) {
-  return this.nodeType === other.nodeType && this.name === other.name && this.type.equals(other.type);
-};
-
-Variable.prototype.combine = function (other) {
+Dysphasia.Variable.prototype.combine = function (other) {
   if (this.type.equals(other.type)) return this;
   throw new SyntaxError('Can\'t combine ' + this.toString() + ' with ' + other.toString());
 };
 
-
 Dysphasia.addNodeType(
   'Literal',
-  [
-    {
-      name: 'value'
-    },
-    {
-      name: 'type',
+  {
+    value: {},
+    type: {
       type: 'Node.Type',
       valueConverter: function (value) {
         if (typeof value === 'string') return new Dysphasia.Type(value);
         return value;
       }
     }
-  ]
+  }
 );
+
 Dysphasia.Literal.prototype.toString = function () {
   var val;
   switch (this.type.type) {
@@ -583,30 +386,4 @@ Dysphasia.Literal.prototype.toString = function () {
   return this.stringBuilder([this.type], { '': val });
 };
 
-module.exports = {
-  File: Dysphasia.File,
-  List: List,
-
-  UseStatement: UseStatement,
-  FnDef: FnDef,
-
-  IfBlock: IfBlock,
-  ForLoop: ForLoop,
-
-  FnCall: FnCall,
-  ReturnStatement: ReturnStatement,
-  VariableDeclaration: VariableDeclaration,
-  Assignment: Assignment,
-
-  Op: Op,
-  StrConcat: StrConcat,
-  Cast: Cast,
-  Buffer: Buffer,
-  Variable: Variable,
-  Type: Dysphasia.Type,
-  Literal: Dysphasia.Literal,
-
-  Empty: Dysphasia.Empty
-};
-
-
+module.exports = Dysphasia;
