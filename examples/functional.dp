@@ -1,0 +1,15 @@
+
+main = [0..10].map(fib(x));
+
+fib (x in 0..2) => 1;
+fib (x > 2) => fib(x-1) + fib(x-2);
+
+fib(x):
+	x in 0..2 => 1;
+	x > 2 => fib(x-1) + fib(x-2);
+
+quicksort [] = []
+quicksort (p:xs) = (quicksort lesser) ++ [p] ++ (quicksort greater)
+    where
+        lesser = filter (< p) xs
+        greater = filter (>= p) xs

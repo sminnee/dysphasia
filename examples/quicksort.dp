@@ -1,0 +1,25 @@
+use puts(string);
+
+int main {
+  puts("Sorted items: " + quicksort([1,2,6,8,2,5,7]).join(", "));
+}
+
+quicksort ([])          => [];
+          ([item])      => [item];
+          ([left:rest]) => quicksort(rest.filter(x | x <= left))
+                            + [left]
+                            + quicksort(rest.filter(x | x > left));
+
+// TO DO:
+// - Guards that pattern-match on empty arrays, 1 element arrays, and array builders.
+// - array.filter method
+// - Closures, with guard sytnax
+// - array concatenation
+// - array.join method
+// - array literals
+
+
+
+[1,2,3].map(x | x * 2);
+
+timesTwo = (x | x * 2);

@@ -1,0 +1,6 @@
+main {
+  puts(square(2));
+  puts(square(3.5));
+}
+
+square (x) => x*x;

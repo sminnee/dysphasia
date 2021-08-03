@@ -35,13 +35,12 @@ File ([
   FnDef main (
   statements: [
     Assignment [Type array] (
-      Variable (x)
-      Literal [Type array] ([
-        Literal [Type int] (1)
-        Literal [Type int] (4)
-        Literal [Type int] (9)
-      ])
-    )
+    variable: Variable (x)
+    expression: Literal [Type array] ([
+      Literal [Type int] (1)
+      Literal [Type int] (4)
+      Literal [Type int] (9)
+    ]))
     ForLoop (
     variable: Variable (y)
     loopSource: Variable (x)
@@ -63,13 +62,12 @@ File ([
   FnDef main (
   statements: [
     Assignment [Type array [Type int] x 3 ] (
-      Variable [Type array [Type int] x 3 ] (x)
-      Literal [Type array [Type int] x 3 ] ([
-        Literal [Type int] (1)
-        Literal [Type int] (4)
-        Literal [Type int] (9)
-      ])
-    )
+    variable: Variable [Type array [Type int] x 3 ] (x)
+    expression: Literal [Type array [Type int] x 3 ] ([
+      Literal [Type int] (1)
+      Literal [Type int] (4)
+      Literal [Type int] (9)
+    ]))
     ForLoop (
     variable: Variable [Type int] (y)
     loopSource: Variable [Type array [Type int] x 3 ] (x)

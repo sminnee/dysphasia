@@ -4,6 +4,10 @@ var ASTKit = require('./ast/ASTKit');
 
 var Dysphasia = new ASTKit();
 
+Dysphasia.setRenderSettings({
+  prefixedProperties: [ 'type', 'name', 'varArgs' ]
+});
+
 Dysphasia.addNodeType(
   'File',
   {
@@ -13,10 +17,6 @@ Dysphasia.addNodeType(
     }
   }
 );
-
-Dysphasia.File.prototype.toString = function () {
-  return 'File (' + this.statements.toString() + ')';
-};
 
 /**
  * Classes defining the dypashaia AST
@@ -42,7 +42,12 @@ Dysphasia.addNodeType(
     name: { type: 'string' },
     type: { type: 'Node.Type' },
     args: { type: 'Node.List' },
-    varArgs: { }
+    varArgs: {
+      toString: {
+        prefix: true,
+        transform: function (value) { return value ? 'var_args' : ''; }
+      }
+    }
   }
 );
 
@@ -53,16 +58,6 @@ Object.defineProperties(Dysphasia.UseStatement.prototype, {
     }
   }
 });
-
-Dysphasia.UseStatement.prototype.toString = function () {
-  return this.stringBuilder([
-    this.type,
-    this.name,
-    (this.varArgs ? 'var_args' : null)
-  ], {
-    '': this.args
-  });
-};
 
 Dysphasia.UseStatement.prototype.combine = function (other) {
   if (!this.type) throw new SyntaxError('RAR: ' + this.toString());
@@ -96,17 +91,6 @@ Object.defineProperties(Dysphasia.FnDef.prototype, {
   }
 });
 
-Dysphasia.FnDef.prototype.toString = function () {
-  return this.stringBuilder(
-    [ this.type, this.name ],
-    {
-      args: this.args,
-      guard: this.guard,
-      statements: this.statements
-    }
-  );
-};
-
 /**
  * An if block
  */
@@ -118,15 +102,6 @@ Dysphasia.addNodeType(
     fail: { type: 'Node' }
   }
 );
-
-Dysphasia.IfBlock.prototype.toString = function () {
-  return this.stringBuilder([], {
-    test: this.test,
-    pass: this.pass,
-    fail: this.fail
-  });
-};
-
 
 /**
  * A for loop
@@ -140,14 +115,6 @@ Dysphasia.addNodeType(
   }
 );
 
-Dysphasia.ForLoop.prototype.toString = function () {
-  return this.stringBuilder([], {
-    variable: this.variable,
-    loopSource: this.loopSource,
-    statements: this.statements
-  });
-};
-
 /**
  * A function call
  */
@@ -155,15 +122,11 @@ Dysphasia.addNodeType(
   'FnCall',
   {
     name: { type: 'string' },
-    args: { type: 'Node.List' },
+    args: { type: 'Node.List', toString: { label: '' } },
     signature: { type: 'Node.List' },
-    type: { type: 'Node.Type' },
+    type: { type: 'Node.Type' }
   }
 );
-
-Dysphasia.FnCall.prototype.toString = function () {
-  return this.stringBuilder([this.type, this.name], { '': this.args, 'signature': this.signature });
-};
 
 Dysphasia.FnCall.prototype.transformChildren = function (transformer) {
   var args = transformer(this.args);
@@ -205,10 +168,6 @@ Dysphasia.addNodeType(
   }
 );
 
-Dysphasia.ReturnStatement.prototype.toString = function () {
-  return this.stringBuilder([this.type], { '': this.expression });
-};
-
 /**
  * A variable declaration
  */
@@ -220,10 +179,6 @@ Dysphasia.addNodeType(
   }
 );
 
-Dysphasia.VariableDeclaration.prototype.toString = function () {
-  return this.stringBuilder([this.type], { '': this.variable });
-};
-
 /**
  * A variable assigment
  */
@@ -234,15 +189,11 @@ Dysphasia.addNodeType(
     expression: { type: 'Node' },
     type: {
       type: 'Node.Type',
+      toString: { prefix: true },
       valueConverter: function (type) { return type.isEmpty() ? this.props.expression.type : type; }
     }
   }
 );
-
-Dysphasia.Assignment.prototype.toString = function () {
-  var typeStr = (this.type.isEmpty()) ? '' : (this.type.toString() + ' ');
-  return 'Assignment ' + typeStr + '(\n' + indent(this.variable.toString() + '\n' + this.expression.toString()) + '\n)';
-};
 
 /**
  * A binary operation
@@ -250,17 +201,12 @@ Dysphasia.Assignment.prototype.toString = function () {
 Dysphasia.addNodeType(
   'Op',
   {
-    op: { type: 'string' },
-    left: { type: 'Node' },
-    right: { type: 'Node' },
+    op: { type: 'string', toString: { label: '' } },
+    left: { type: 'Node', toString: { label: '' } },
+    right: { type: 'Node', toString: { label: '' } },
     type: { type: 'Node.Type' }
   }
 );
-
-Dysphasia.Op.prototype.toString = function () {
-  var typeStr = (this.type.isEmpty()) ? '' : (this.type.toString() + ' ');
-  return 'Op ' + typeStr + '(' + this.op + '\n' + indent(this.left.toString() + '\n' + this.right.toString()) + '\n)';
-};
 
 /**
  * A type expression

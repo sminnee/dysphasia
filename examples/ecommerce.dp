@@ -1,0 +1,48 @@
+
+Product {
+  Name: String;
+  Price: Float;
+  Weight: Float;
+}
+
+ProductGroup {
+  Products: Product[];
+}
+
+Order {
+  Products: Product[];
+  ShippingDest: Address;
+
+  Weight
+    => Products.map(p => p.Weight).sum;
+
+  ShippingCost
+    (Address.Country == 'NZ') => Weight * 5;
+}
+
+Address {
+  Country: String;
+  City: String;
+  Street: String;
+  Postcode: String;
+}
+
+shippingCost (Order o | o.Address.Country = 'NZ')
+  => o.Weight * 5;
+
+shippingCost (Order o)
+  => o.Weight * 10;
+
+Cart {
+  Products: {
+    Product: Product;
+    Quantity: Int; 
+  }[];
+
+  AddProduct (Product p) mutates this {
+    Products.find( p => p.Product == p)
+    => this.Products.push
+  }
+
+  CreateOrder
+}

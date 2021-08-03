@@ -1,0 +1,43 @@
+input = [
+  <'2015-07-06', 10>,
+  <'2015-07-13', 10>,
+  <'2015-07-20', 10>,
+  <'2015-07-27', 10>,
+  <'2015-08-03', 10>,
+  <'2015-08-10', 10>,
+  <'2015-08-17', 10>,
+  <'2015-08-24', 10>,
+  <'2015-08-31', 10>,
+  <'2015-09-07', 10>
+];
+
+/**
+ * Convert a count of items per week to a count of items per month
+ */
+groupWeeksIntoMonth(list) => list.map( <week,amount> | weekRatio(week) * amount ).combine(+);
+
+weekRatio (monday | (monday + 4).month == monday.month) => [<monday.month, 1>];
+
+weekRatio (monday) {
+  daysUntilNextMonth = (monday + 4).month - monday;
+  ratio = daysUntilNextMonth / 5.0;
+  [<monday.month, ratio>, <(monday + 4).month, 1 - ratio>];
+}
+
+/*
+output = {
+  ('2015-07-01', 40),
+  ('2015-08-01', 42),
+  ('2015-09-01', 18)
+}
+*/
+
+/**
+ * TO DO:
+ *  - Date object with additional and month property
+ *  - List object
+ *  - Dictionary addition and multiplication
+ *  - List map() and combine() methods
+ *  - Guard syntax for closures
+ *  - Operators as binary function variables
+ */

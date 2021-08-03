@@ -4,6 +4,7 @@ var Empty = require('./Empty');
 var List = require('./List');
 
 function ASTKit () {
+  this.renderSettings = {};
 }
 
 function construct (constructor, args) {
@@ -15,6 +16,8 @@ function construct (constructor, args) {
 }
 
 ASTKit.prototype.addNodeType = function (name, propMap) {
+  var astkit = this;
+
   // Convert map of property specs to array
   var propSpec = [];
   var propName;
@@ -90,7 +93,54 @@ ASTKit.prototype.addNodeType = function (name, propMap) {
     return true;
   };
 
+  Subclass.prototype.toString = function () {
+    var self = this;
+
+    var prefixes = [];
+    var contents = {};
+    var contentsLength = propSpec.length;
+
+    propSpec.forEach(function (spec, i) {
+      var value = self.props[spec.name];
+      if (spec.toString && spec.toString.transform) {
+        value = spec.toString.transform(value);
+      }
+
+      var label;
+      if (spec.toString && spec.toString.label !== undefined) {
+        label = spec.toString.label;
+      } else {
+        label = spec.name;
+      }
+      contents[label] = value;
+    });
+
+    //
+    if (astkit.renderSettings.prefixedProperties) {
+      astkit.renderSettings.prefixedProperties.forEach(function (propName) {
+        if (propMap[propName]) {
+          prefixes.push(contents[propName]);
+          delete contents[propName];
+          contentsLength--;
+        }
+      });
+    }
+
+    // If there's only one contents item, remove the key
+    if (contentsLength === 1) {
+      contents = {
+        '': contents[Object.keys(contents)[0]]
+      };
+    }
+
+    return this.stringBuilder(prefixes, contents);
+  };
+
   this[name] = Subclass;
+};
+
+ASTKit.prototype.setRenderSettings = function (renderSettings) {
+  this.renderSettings = renderSettings;
 };
 
 ASTKit.prototype.ASTNode = ASTNode;

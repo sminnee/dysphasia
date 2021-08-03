@@ -1,0 +1,91 @@
+Language features
+=================
+
+Types
+-----
+
+The core types are strings, integers, floats, and booelans.
+
+Strings are double-quoted:
+
+	"Hello world!\n"
+
+Integers don't contain a decimal point:
+
+	123 + 456
+
+Floating point numbers do:
+
+	123.0 * 4.0;
+
+Boolean literals are `True`, and `False`.
+
+Arrays can be specified with square brackets and comma-separated values:
+
+	[1, 2, 3]
+
+Ranges can be used as short-hand for arrays:
+
+	1..5 == [1, 2, 3, 4, 5] // True
+
+=======
+Basic mathematical expressions are supported, with `+`, `-`, `*`, and `/`:
+
+	12 * (2 + 4)
+
+Comparison functions `<`, `>`, `<=`, and `>=` are avaiable. They return booleans.
+
+	12 < 15
+
+Boolean operators `&&` and `||` are available:
+
+	x >= 1 && x <= 10
+
+For numeric values `in x..y` can be used to check if a number is in a range:
+
+	x in 1..10 // Equivalent of x >= 1 && x <= 10
+
+Loops
+-----
+
+For loops will iterate on an array. You can simply provide a list, as a way of repeating a statement a number of times:
+
+	for(1..10) {
+		puts("Show me ten times\n");
+	}
+
+	for([1,3,5]) {
+		puts("Show me 3 times\n");
+	}
+
+However, generally, you will want to access the value extracted from the array:
+
+	for(x in 10..1) {
+		puts("" + x + "..\n");
+	}
+	puts("Liftoff!\n");
+
+Functions
+---------
+
+Functions are described with simple block. Arguments are optional. This defines a function called main:
+
+	main {
+		puts("hello world");
+	}
+	greet(String name) {
+		puts("Hi, " + name);
+	}
+
+For 1-expression functions, the arrow syntax is supported. With the arrow syntax, the expression is used as the return
+value:
+
+	main => puts("hello world");
+	Int fib(Int x) => fib(x-1) + fib(x-2);
+
+Functions may have multiple definitions, with guard expressions. The first matching form of the function will be used:
+
+	fib(Int x | x in 1..2) => 1;
+	fib(Int x | x>2) => fib(x-1) + fib(x-2);
+
+If a function is called and all the guard expressions fail, then an invalid argument error will occur.

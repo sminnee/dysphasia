@@ -1,0 +1,25 @@
+use printf(string, ...);
+
+int main {
+  int x;
+  for(x in 1..50) {
+    printf("fib(%i) = %i\n", x, fib2(x)[0] );
+  };
+  return 0;
+}
+
+/**
+ * Fibonacci
+ * This runs in O(n) time - better!
+ */
+int[2] fib2(int x) {
+  if(x < 3) {
+    return [1,1];
+  } else {
+    int[2] pair = fib2(x-1);
+    return [ pair[0] + pair[1], pair[0] ]
+  };
+}
+
+
+// Needs vector support

@@ -1,0 +1,11 @@
+use puts(string);
+use printf(buffer, string, ...);
+use snprintf(buffer, int, string, ...);
+
+main {
+  int x;
+  for(x in [1,4,9,16]) {
+    puts("T minus " + x + " seconds");
+  };
+  return 0;
+}

@@ -1,0 +1,10 @@
+use puts(string);
+use snprintf(buffer, int, string, ...);
+
+main {
+  x = [1,4,9,16,25];
+  for(y in x) {
+    puts("x[] = " + y);
+  };
+
+}

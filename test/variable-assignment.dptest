@@ -16,23 +16,20 @@ File ([
   FnDef main (
   statements: [
     Assignment [Type int] (
+    variable: Variable (x)
+    expression: Literal [Type int] (1))
+    Assignment (
+    variable: Variable (y)
+    expression: Op (*
       Variable (x)
-      Literal [Type int] (1)
-    )
+      Literal [Type int] (2)
+    ))
     Assignment (
+    variable: Variable (z)
+    expression: Op (*
       Variable (y)
-      Op (*
-        Variable (x)
-        Literal [Type int] (2)
-      )
-    )
-    Assignment (
-      Variable (z)
-      Op (*
-        Variable (y)
-        Variable (y)
-      )
-    )
+      Variable (y)
+    ))
     ReturnStatement (Variable (z))
   ])
 ])
@@ -41,23 +38,20 @@ File ([
   FnDef [Type int] main (
   statements: [
     Assignment [Type int] (
+    variable: Variable [Type int] (x)
+    expression: Literal [Type int] (1))
+    Assignment [Type int] (
+    variable: Variable [Type int] (y)
+    expression: Op [Type int] (*
       Variable [Type int] (x)
-      Literal [Type int] (1)
-    )
+      Literal [Type int] (2)
+    ))
     Assignment [Type int] (
+    variable: Variable [Type int] (z)
+    expression: Op [Type int] (*
       Variable [Type int] (y)
-      Op [Type int] (*
-        Variable [Type int] (x)
-        Literal [Type int] (2)
-      )
-    )
-    Assignment [Type int] (
-      Variable [Type int] (z)
-      Op [Type int] (*
-        Variable [Type int] (y)
-        Variable [Type int] (y)
-      )
-    )
+      Variable [Type int] (y)
+    ))
     ReturnStatement [Type int] (Variable [Type int] (z))
   ])
 ])

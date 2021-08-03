@@ -1,0 +1,4 @@
+-I/usr/local/Cellar/llvm36/3.6.2/lib/llvm-3.6/include  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O3  -std=c++11 -fvisibility-inlines-hidden -fno-exceptions -fno-common -Wcast-qual
+-L/usr/local/Cellar/llvm36/3.6.2/lib/llvm-3.6/lib 
+-lLLVMCore -lLLVMSupport
+-lz -lpthread -lffi -ledit -lcurses -lm 

@@ -1,0 +1,10 @@
+use puts(string);
+use snprintf(buffer, int, string, ...);
+
+main {
+  x = [1, 4, 9];
+  for(y in x) {
+    puts("Counting " + y);
+  };
+  return 0;
+}
